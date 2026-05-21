@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+
+{% block title %}My Results - Study Tracker{% endblock %}
+
+{% block content %}
+<h1>My Results</h1>
+
+<!-- Overall Summary -->
+<div class="results-summary">
+    <div class="summary-card">
+        <h3>Total Marks</h3>
+        <div class="summary-value">{{ total_obtained }} / {{ total_max }}</div>
+    </div>
+    
+    <div class="summary-card">
+        <h3>Overall Percentage</h3>
+        <div class="summary-value">{{ overall_percentage }}%</div>
+    </div>
+    
+    <div class="summary-card">
+        <h3>Overall Grade</h3>
+        <div class="summary-value grade-{{ overall_grade }}">{{ overall_grade }}</div>
+    </div>
+    
+    {% if rank_info %}
+    <div class="summary-card">
+        <h3>Rank ({{ rank_info.exam_name }})</h3>
+        <div class="summary-value">{{ rank_info.rank }} / {{ rank_info.total_students }}</div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Detailed Results -->
+<div class="card">
+    <h3>📊 Detailed Results</h3>
+    {% if results %}
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Subject</th>
+                    <th>Exam</th>
+                    <th>Marks</th>
+                    <th>Percentage</th>
+                    <th>Grade</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for result in results %}
+                <tr>
+                    <td>{{ result.subject_name }}</td>
+                    <td>{{ result.exam_name }}</td>
+                    <td>{{ result.marks_obtained }} / {{ result.max_marks }}</td>
+                    <td>{{ result.percentage }}%</td>
+                    <td class="grade-{{ result.grade }}">{{ result.grade }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p class="empty-state">No results available yet. Check back after your teacher enters marks.</p>
+    {% endif %}
+</div>
+
+<!-- Grade Scale -->
+<div class="card">
+    <h3>📏 Grade Scale</h3>
+    <table class="data-table grade-scale">
+        <tr><td>A+</td><td>90% and above</td></tr>
+        <tr><td>A</td><td>80% - 89%</td></tr>
+        <tr><td>B</td><td>70% - 79%</td></tr>
+        <tr><td>C</td><td>60% - 69%</td></tr>
+        <tr><td>D</td><td>50% - 59%</td></tr>
+        <tr><td>F</td><td>Below 50%</td></tr>
+    </table>
+</div>
+{% endblock %}

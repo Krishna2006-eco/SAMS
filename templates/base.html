@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Study Tracker{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand">
+            <a href="{{ url_for('home') }}">📚 Study Tracker</a>
+        </div>
+        <div class="nav-links">
+            {% if session.get('user_id') %}
+                <span class="welcome-text">Hello, {{ session.get('full_name') }}</span>
+                {% if session.get('role') == 'teacher' %}
+                    <a href="{{ url_for('teacher_dashboard') }}">Dashboard</a>
+                    <a href="{{ url_for('enter_marks') }}">Enter Marks</a>
+                    <a href="{{ url_for('assign_task') }}">Assign Task</a>
+                {% else %}
+                    <a href="{{ url_for('student_dashboard') }}">Dashboard</a>
+                    <a href="{{ url_for('add_study_log') }}">Log Study</a>
+                    <a href="{{ url_for('view_results') }}">My Results</a>
+                {% endif %}
+                <a href="{{ url_for('logout') }}" class="btn-logout">Logout</a>
+            {% else %}
+                <a href="{{ url_for('login') }}">Login</a>
+                <a href="{{ url_for('register') }}">Register</a>
+            {% endif %}
+        </div>
+    </nav>
+
+    <main class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer>
+        <p>&copy; 2025 Study Progress & Result Manager</p>
+    </footer>
+</body>
+</html>

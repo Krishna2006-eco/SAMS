@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+
+{% block title %}Assign Task - Study Tracker{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <h2>Assign Task to Student</h2>
+    <form method="POST" action="{{ url_for('assign_task') }}">
+        <div class="form-group">
+            <label for="student_id">Student</label>
+            <select id="student_id" name="student_id" required>
+                <option value="">Select a student</option>
+                {% for student in students %}
+                    <option value="{{ student.id }}">{{ student.full_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="title">Task Title</label>
+            <input type="text" id="title" name="title" 
+                   placeholder="e.g., Complete 5-day study streak" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="description">Description (optional)</label>
+            <textarea id="description" name="description" rows="3"
+                      placeholder="Detailed instructions for the task..."></textarea>
+        </div>
+        
+        <div class="form-group">
+            <label for="due_date">Due Date (optional)</label>
+            <input type="date" id="due_date" name="due_date">
+        </div>
+        
+        <button type="submit" class="btn btn-primary">Assign Task</button>
+        <a href="{{ url_for('teacher_dashboard') }}" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}

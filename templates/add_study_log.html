@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+
+{% block title %}Log Study Session - Study Tracker{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <h2>Log Study Session</h2>
+    <form method="POST" action="{{ url_for('add_study_log') }}">
+        <div class="form-group">
+            <label for="subject_id">Subject</label>
+            <select id="subject_id" name="subject_id" required>
+                <option value="">Select a subject</option>
+                {% for subject in subjects %}
+                    <option value="{{ subject.id }}">{{ subject.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="hours_spent">Hours Spent</label>
+            <input type="number" id="hours_spent" name="hours_spent" 
+                   step="0.5" min="0.5" max="12" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="study_date">Date</label>
+            <input type="date" id="study_date" name="study_date" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="notes">Notes (optional)</label>
+            <textarea id="notes" name="notes" rows="3" 
+                      placeholder="What did you study? Any challenges?"></textarea>
+        </div>
+        
+        <button type="submit" class="btn btn-primary">Log Session</button>
+        <a href="{{ url_for('student_dashboard') }}" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}

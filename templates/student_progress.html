@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ student.full_name }} - Progress{% endblock %}
+
+{% block content %}
+<h1>{{ student.full_name }}'s Progress</h1>
+<p><a href="{{ url_for('teacher_dashboard') }}">&larr; Back to Dashboard</a></p>
+
+<!-- Study Logs -->
+<div class="card">
+    <h3>📖 Study Sessions</h3>
+    {% if study_logs %}
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Subject</th>
+                    <th>Hours</th>
+                    <th>Notes</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in study_logs %}
+                <tr>
+                    <td>{{ log.study_date }}</td>
+                    <td>{{ log.subject_name }}</td>
+                    <td>{{ log.hours_spent }} hrs</td>
+                    <td>{{ log.notes or '-' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p class="empty-state">No study sessions logged.</p>
+    {% endif %}
+</div>
+
+<!-- Results -->
+<div class="card">
+    <h3>📊 Results</h3>
+    {% if results %}
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Subject</th>
+                    <th>Exam</th>
+                    <th>Marks</th>
+                    <th>Percentage</th>
+                    <th>Grade</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for result in results %}
+                <tr>
+                    <td>{{ result.subject_name }}</td>
+                    <td>{{ result.exam_name }}</td>
+                    <td>{{ result.marks_obtained }} / {{ result.max_marks }}</td>
+                    <td>{{ result.percentage }}%</td>
+                    <td class="grade-{{ result.grade }}">{{ result.grade }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p class="empty-state">No marks entered yet.</p>
+    {% endif %}
+</div>
+{% endblock %}

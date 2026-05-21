@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+
+{% block title %}Home - Study Tracker{% endblock %}
+
+{% block content %}
+<div class="hero">
+    <h1>Student Academic Management System(SAMS)</h1>
+    <p>Track your study habits, monitor your progress, and achieve your academic goals.</p>
+    
+    {% if not session.get('user_id') %}
+        <div class="hero-buttons">
+            <a href="{{ url_for('register') }}" class="btn btn-primary">Get Started</a>
+            <a href="{{ url_for('login') }}" class="btn btn-secondary">Login</a>
+        </div>
+    {% endif %}
+</div>
+
+<div class="features">
+    <div class="feature-card">
+        <h3>📖 For Students</h3>
+        <ul>
+            <li>Log your daily study sessions</li>
+            <li>Track hours spent per subject</li>
+            <li>View your marks and grades</li>
+            <li>Monitor your rank among peers</li>
+            <li>Complete assigned tasks</li>
+        </ul>
+    </div>
+    
+    <div class="feature-card">
+        <h3>👨‍🏫 For Teachers</h3>
+        <ul>
+            <li>Enter marks for students</li>
+            <li>View student study patterns</li>
+            <li>Assign improvement tasks</li>
+            <li>Track class performance</li>
+            <li>Auto-calculated grades & ranks</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

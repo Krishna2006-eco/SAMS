@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+
+{% block title %}Teacher Dashboard - Study Tracker{% endblock %}
+
+{% block content %}
+<h1>Teacher Dashboard</h1>
+
+<!-- Quick Actions -->
+<div class="card">
+    <h3>Quick Actions</h3>
+    <div class="quick-actions">
+        <a href="{{ url_for('enter_marks') }}" class="btn btn-primary">Enter Marks</a>
+        <a href="{{ url_for('assign_task') }}" class="btn btn-secondary">Assign Task</a>
+    </div>
+</div>
+
+<!-- Student List -->
+<div class="card">
+    <h3>👨‍🎓 Students</h3>
+    {% if students %}
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Username</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for student in students %}
+                <tr>
+                    <td>{{ student.full_name }}</td>
+                    <td>{{ student.username }}</td>
+                    <td>
+                        <a href="{{ url_for('student_progress', student_id=student.id) }}" class="btn btn-small">View Progress</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p class="empty-state">No students registered yet.</p>
+    {% endif %}
+</div>
+
+<!-- Recent Study Activity -->
+<div class="card">
+    <h3>📖 Recent Student Study Activity</h3>
+    {% if recent_logs %}
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Student</th>
+                    <th>Subject</th>
+                    <th>Hours</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in recent_logs %}
+                <tr>
+                    <td>{{ log.student_name }}</td>
+                    <td>{{ log.subject_name }}</td>
+                    <td>{{ log.hours_spent }} hrs</td>
+                    <td>{{ log.study_date }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p class="empty-state">No study activity recorded yet.</p>
+    {% endif %}
+</div>
+{% endblock %}

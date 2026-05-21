@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+
+{% block title %}Student Dashboard - Study Tracker{% endblock %}
+
+{% block content %}
+<h1>Welcome, {{ session.get('full_name') }}</h1>
+
+<div class="dashboard-grid">
+    <!-- Study Streak Card -->
+    <div class="card streak-card">
+        <h3>🔥 Study Streak</h3>
+        <div class="streak-number">{{ streak }}</div>
+        <p>days in the last week</p>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="card">
+        <h3>Quick Actions</h3>
+        <div class="quick-actions">
+            <a href="{{ url_for('add_study_log') }}" class="btn btn-primary">+ Log Study Session</a>
+            <a href="{{ url_for('view_results') }}" class="btn btn-secondary">View Results</a>
+        </div>
+    </div>
+</div>
+
+<!-- Study Summary -->
+<div class="card">
+    <h3>📊 Study Hours by Subject</h3>
+    {% if study_summary %}
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Subject</th>
+                    <th>Total Hours</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in study_summary %}
+                <tr>
+                    <td>{{ item.subject_name }}</td>
+                    <td>{{ "%.1f"|format(item.total_hours) }} hrs</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p class="empty-state">No study sessions logged yet. Start tracking your progress!</p>
+    {% endif %}
+</div>
+
+<!-- Assigned Tasks -->
+<div class="card">
+    <h3>📋 Assigned Tasks</h3>
+    {% if tasks %}
+        <ul class="task-list">
+            {% for task in tasks %}
+            <li class="task-item {% if task.is_completed %}completed{% endif %}">
+                <div class="task-info">
+                    <strong>{{ task.title }}</strong>
+                    {% if task.description %}
+                        <p>{{ task.description }}</p>
+                    {% endif %}
+                    <small>Assigned by: {{ task.teacher_name }}
+                        {% if task.due_date %} | Due: {{ task.due_date }}{% endif %}
+                    </small>
+                </div>
+                {% if not task.is_completed %}
+                    <a href="{{ url_for('complete_task', task_id=task.id) }}" class="btn btn-small">Mark Done</a>
+                {% else %}
+                    <span class="badge-completed">✓ Done</span>
+                {% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p class="empty-state">No tasks assigned yet.</p>
+    {% endif %}
+</div>
+
+<!-- Recent Study Logs -->
+<div class="card">
+    <h3>📝 Recent Study Sessions</h3>
+    {% if study_logs %}
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Subject</th>
+                    <th>Hours</th>
+                    <th>Notes</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in study_logs %}
+                <tr>
+                    <td>{{ log.study_date }}</td>
+                    <td>{{ log.subject_name }}</td>
+                    <td>{{ log.hours_spent }} hrs</td>
+                    <td>{{ log.notes or '-' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p class="empty-state">No study sessions logged yet.</p>
+    {% endif %}
+</div>
+{% endblock %}
