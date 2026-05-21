@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Study Tracker{% endblock %}</title>
+    <title>{% block title %}SAMS{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
     <nav class="navbar">
         <div class="nav-brand">
-            <a href="{{ url_for('home') }}">📚 Study Tracker</a>
+            <a href="{{ url_for('home') }}">📚 SAMS</a>
         </div>
         <div class="nav-links">
             {% if session.get('user_id') %}

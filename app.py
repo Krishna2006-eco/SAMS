@@ -174,10 +174,10 @@ def student_dashboard():
     
     # Calculate study streak (consecutive days)
     streak = conn.execute('''
-        SELECT COUNT(DISTINCT study_date) as days
+        SELECT COUNT (DISTINCT study_date) as days
         FROM study_logs
         WHERE student_id = ?
-        AND study_date >= date('now', '-7 days')
+        ORDER BY study_date > DATE('now') DESC
     ''', (session['user_id'],)).fetchone()
     
     conn.close()
