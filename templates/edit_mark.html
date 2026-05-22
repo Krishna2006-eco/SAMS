@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Marks - Study Tracker{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <h2>Edit Marks for {{ mark.student_name }}</h2>
+    <form method="POST" action="{{ url_for('edit_mark', mark_id=mark.id) }}">
+        <div class="form-group">
+            <label>Student</label>
+            <input type="text" value="{{ mark.student_name }}" disabled>
+        </div>
+
+        <div class="form-group">
+            <label for="subject_id">Subject</label>
+            <select id="subject_id" name="subject_id" required>
+                {% for subject in subjects %}
+                    <option value="{{ subject.id }}"
+                        {% if subject.id == mark.subject_id %}selected{% endif %}>
+                        {{ subject.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="exam_name">Exam Name</label>
+            <input type="text" id="exam_name" name="exam_name" value="{{ mark.exam_name }}" required>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="marks_obtained">Marks Obtained</label>
+                <input type="number" id="marks_obtained" name="marks_obtained"
+                       step="0.5" min="0" value="{{ mark.marks_obtained }}" required>
+            </div>
+            <div class="form-group">
+                <label for="max_marks">Maximum Marks</label>
+                <input type="number" id="max_marks" name="max_marks"
+                       min="1" value="{{ mark.max_marks }}" required>
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Update Marks</button>
+        <a href="{{ url_for('student_progress', student_id=mark.student_id) }}" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}
