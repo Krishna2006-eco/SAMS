@@ -9,3 +9,5 @@ venv/
 study_tracker.db
 
 .vscode/
+study_tracker.db
+venv/
