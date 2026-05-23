@@ -21,9 +21,15 @@ def init_db():
             password TEXT NOT NULL,
             role TEXT NOT NULL CHECK(role IN ('teacher', 'student')),
             full_name TEXT NOT NULL,
+            department TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
+
+    # Ensure the department column exists for older databases.
+    existing_columns = [row[1] for row in cursor.execute("PRAGMA table_info(users)").fetchall()]
+    if 'department' not in existing_columns:
+        cursor.execute('ALTER TABLE users ADD COLUMN department TEXT')
     
     # Subjects table
     cursor.execute('''

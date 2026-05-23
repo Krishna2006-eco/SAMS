@@ -35,6 +35,37 @@
     {% endif %}
 </div>
 
+<!-- Assigned Tasks -->
+<div class="card">
+    <h3>📝 Assigned Tasks</h3>
+    {% if tasks %}
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Description</th>
+                    <th>Assigned By</th>
+                    <th>Due Date</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for task in tasks %}
+                <tr>
+                    <td>{{ task.title }}</td>
+                    <td>{{ task.description or '-' }}</td>
+                    <td>{{ task.teacher_name }}</td>
+                    <td>{{ task.due_date or '-' }}</td>
+                    <td>{{ 'Completed' if task.is_completed else 'Pending' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p class="empty-state">No tasks assigned yet.</p>
+    {% endif %}
+</div>
+
 <!-- Tasks -->
 <div class="card">
     <h3>📝 Assigned Tasks</h3>

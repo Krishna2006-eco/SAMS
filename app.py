@@ -174,10 +174,10 @@ def student_dashboard():
     
     # Calculate study streak (consecutive days)
     streak = conn.execute('''
-        SELECT COUNT(DISTINCT study_date) as days
+        SELECT COUNT (DISTINCT study_date) as days
         FROM study_logs
         WHERE student_id = ?
-        AND study_date >= date('now', '-7 days')
+        ORDER BY study_date > DATE('now') DESC
     ''', (session['user_id'],)).fetchone()
     
     conn.close()
@@ -301,6 +301,76 @@ def complete_task(task_id):
     
     flash('Task marked as completed!', 'success')
     return redirect(url_for('student_dashboard'))
+
+@app.route('/student/edit-study-log/<int:log_id>', methods=['GET', 'POST'])
+@login_required
+@student_required
+def edit_study_log(log_id):
+    """Edit an existing study log."""
+    conn = get_db_connection()
+    log = conn.execute('''
+        SELECT sl.*, s.name as subject_name
+        FROM study_logs sl
+        JOIN subjects s ON sl.subject_id = s.id
+        WHERE sl.id = ? AND sl.student_id = ?
+    ''', (log_id, session['user_id'])).fetchone()
+
+    if not log:
+        flash('Study log not found or you do not have permission to edit it.', 'error')
+        conn.close()
+        return redirect(url_for('student_dashboard'))
+
+    subjects = conn.execute('SELECT * FROM subjects ORDER BY name').fetchall()
+
+    if request.method == 'POST':
+        subject_id = request.form['subject_id']
+        hours_spent = float(request.form['hours_spent'])
+        study_date = request.form['study_date']
+        notes = request.form.get('notes', '')
+
+        conn.execute('''
+            UPDATE study_logs
+            SET subject_id = ?, hours_spent = ?, study_date = ?, notes = ?
+            WHERE id = ?
+        ''', (subject_id, hours_spent, study_date, notes, log_id))
+        conn.commit()
+        conn.close()
+
+        flash('Study session updated successfully!', 'success')
+        return redirect(url_for('student_dashboard'))
+
+    conn.close()
+    return render_template('edit_study_log.html', log=log, subjects=subjects)
+
+
+@app.route('/student/toggle-task/<int:task_id>', methods=['POST'])
+@login_required
+@student_required
+def toggle_task(task_id):
+    """Toggle task completion status."""
+    conn = get_db_connection()
+    task = conn.execute('''
+        SELECT is_completed FROM tasks
+        WHERE id = ? AND student_id = ?
+    ''', (task_id, session['user_id'])).fetchone()
+
+    if not task:
+        flash('Task not found or you do not have permission to edit it.', 'error')
+        conn.close()
+        return redirect(url_for('student_dashboard'))
+
+    new_status = 0 if task['is_completed'] else 1
+    conn.execute('''
+        UPDATE tasks SET is_completed = ?
+        WHERE id = ?
+    ''', (new_status, task_id))
+    conn.commit()
+    conn.close()
+
+    status_text = 'completed' if new_status else 'pending'
+    flash(f'Task marked as {status_text}!', 'success')
+    return redirect(url_for('student_dashboard'))
+
 
 # ----- Teacher Routes -----
 
@@ -509,7 +579,7 @@ def student_progress(student_id):
     # Calculate results with grades
     results = []
     for mark in marks:
-        percentage = (mark['marks_obtained'] / mark['max_marks']) * 100 if mark['max_marks'] else 0
+        percentage = (mark['marks_obtained'] / mark['max_marks']) * 100 if mark['max_marks'] else 0 if mark['max_marks'] else 0
         grade = calculate_grade(percentage)
         results.append({
             'id': mark['id'],
