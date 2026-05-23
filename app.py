@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash
+from datetime import datetime, date, timedelta
 from database import get_db_connection, init_db
 from functools import wraps
 
@@ -172,21 +173,35 @@ def student_dashboard():
         ORDER BY t.is_completed ASC, t.due_date ASC
     ''', (session['user_id'],)).fetchall()
     
-    # Calculate study streak (consecutive days)
-    streak = conn.execute('''
-        SELECT COUNT (DISTINCT study_date) as days
+    # Calculate study streak (consecutive days ending today)
+    streak_rows = conn.execute('''
+        SELECT DISTINCT study_date
         FROM study_logs
         WHERE student_id = ?
-        ORDER BY study_date > DATE('now') DESC
-    ''', (session['user_id'],)).fetchone()
-    
+        ORDER BY study_date DESC
+    ''', (session['user_id'],)).fetchall()
+
+    streak = 0
+    if streak_rows:
+        study_dates = [datetime.fromisoformat(row['study_date']).date() for row in streak_rows]
+        today = date.today()
+
+        if study_dates[0] == today:
+            streak = 1
+            for next_date in study_dates[1:]:
+                expected_date = today - timedelta(days=streak)
+                if next_date == expected_date:
+                    streak += 1
+                else:
+                    break
+
     conn.close()
-    
+
     return render_template('student_dashboard.html',
                          study_logs=study_logs,
                          study_summary=study_summary,
                          tasks=tasks,
-                         streak=streak['days'] if streak else 0)
+                         streak=streak)
 
 @app.route('/student/add-study-log', methods=['GET', 'POST'])
 @login_required
@@ -386,13 +401,17 @@ def teacher_dashboard():
         SELECT * FROM users WHERE role = 'student' ORDER BY full_name
     ''').fetchall()
     
-    # Get recent study logs from all students
+    # Get recent activity by student
     recent_logs = conn.execute('''
-        SELECT sl.*, s.name as subject_name, u.full_name as student_name
+        SELECT u.id as student_id,
+               u.full_name as student_name,
+               MAX(sl.created_at) as last_activity,
+               COUNT(DISTINCT sl.subject_id) as subjects_covered,
+               SUM(sl.hours_spent) as total_hours
         FROM study_logs sl
-        JOIN subjects s ON sl.subject_id = s.id
         JOIN users u ON sl.student_id = u.id
-        ORDER BY sl.created_at DESC
+        GROUP BY sl.student_id
+        ORDER BY last_activity DESC
         LIMIT 20
     ''').fetchall()
     

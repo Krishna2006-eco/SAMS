@@ -43,7 +43,7 @@
     {% endif %}
 </div>
 
-<!-- Recent Study Activity -->
+<!-- Recent Student Activity -->
 <div class="card">
     <h3>📖 Recent Student Study Activity</h3>
     {% if recent_logs %}
@@ -51,18 +51,20 @@
             <thead>
                 <tr>
                     <th>Student</th>
-                    <th>Subject</th>
-                    <th>Hours</th>
-                    <th>Date</th>
+                    <th>Last Activity</th>
+                    <th>Subjects Covered</th>
+                    <th>Total Hours</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
                 {% for log in recent_logs %}
                 <tr>
-                    <td>{{ log.student_name }}</td>
-                    <td>{{ log.subject_name }}</td>
-                    <td>{{ log.hours_spent }} hrs</td>
-                    <td>{{ log.study_date }}</td>
+                    <td><a href="{{ url_for('student_progress', student_id=log.student_id) }}">{{ log.student_name }}</a></td>
+                    <td>{{ log.last_activity }}</td>
+                    <td>{{ log.subjects_covered }}</td>
+                    <td>{{ log.total_hours }} hrs</td>
+                    <td><a href="{{ url_for('student_progress', student_id=log.student_id) }}" class="btn btn-small">View Activity</a></td>
                 </tr>
                 {% endfor %}
             </tbody>
