@@ -64,11 +64,11 @@
                         {% if task.due_date %} | Due: {{ task.due_date }}{% endif %}
                     </small>
                 </div>
-                {% if not task.is_completed %}
-                    <a href="{{ url_for('complete_task', task_id=task.id) }}" class="btn btn-small">Mark Done</a>
-                {% else %}
-                    <span class="badge-completed">✓ Done</span>
-                {% endif %}
+                <form method="POST" action="{{ url_for('toggle_task', task_id=task.id) }}" style="display: inline;">
+                    <button type="submit" class="btn btn-small">
+                        {% if task.is_completed %}Mark Pending{% else %}Mark Done{% endif %}
+                    </button>
+                </form>
             </li>
             {% endfor %}
         </ul>
@@ -88,6 +88,7 @@
                     <th>Subject</th>
                     <th>Hours</th>
                     <th>Notes</th>
+                    <th>Action</th>
                 </tr>
             </thead>
             <tbody>
@@ -97,6 +98,9 @@
                     <td>{{ log.subject_name }}</td>
                     <td>{{ log.hours_spent }} hrs</td>
                     <td>{{ log.notes or '-' }}</td>
+                    <td>
+                        <a href="{{ url_for('edit_study_log', log_id=log.id) }}" class="btn btn-small">Edit</a>
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
