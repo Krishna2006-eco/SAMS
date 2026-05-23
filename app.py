@@ -402,6 +402,85 @@ def teacher_dashboard():
                          students=students,
                          recent_logs=recent_logs)
 
+
+
+@app.route('/teacher/edit-mark/<int:mark_id>', methods=['GET', 'POST'])
+@login_required
+@teacher_required
+def edit_mark(mark_id):
+    conn = get_db_connection()
+    mark = conn.execute('''
+        SELECT m.*, u.full_name as student_name
+        FROM marks m
+        JOIN users u ON m.student_id = u.id
+        WHERE m.id = ? AND m.entered_by = ?
+    ''', (mark_id, session['user_id'])).fetchone()
+
+    if not mark:
+        flash('Mark not found or you do not have permission to edit it.', 'error')
+        conn.close()
+        return redirect(url_for('teacher_dashboard'))
+
+    subjects = conn.execute('SELECT * FROM subjects ORDER BY name').fetchall()
+
+    if request.method == 'POST':
+        subject_id = request.form['subject_id']
+        marks_obtained = float(request.form['marks_obtained'])
+        max_marks = float(request.form['max_marks'])
+        exam_name = request.form['exam_name']
+
+        conn.execute('''
+            UPDATE marks
+            SET subject_id = ?, marks_obtained = ?, max_marks = ?, exam_name = ?
+            WHERE id = ?
+        ''', (subject_id, marks_obtained, max_marks, exam_name, mark_id))
+        conn.commit()
+        conn.close()
+
+        flash('Mark updated successfully!', 'success')
+        return redirect(url_for('student_progress', student_id=mark['student_id']))
+
+    conn.close()
+    return render_template('edit_mark.html', mark=mark, subjects=subjects)
+
+
+@app.route('/teacher/edit-task/<int:task_id>', methods=['GET', 'POST'])
+@login_required
+@teacher_required
+def edit_task(task_id):
+    conn = get_db_connection()
+    task = conn.execute('''
+        SELECT t.*, u.full_name as student_name
+        FROM tasks t
+        JOIN users u ON t.student_id = u.id
+        WHERE t.id = ? AND t.teacher_id = ?
+    ''', (task_id, session['user_id'])).fetchone()
+
+    if not task:
+        flash('Task not found or you do not have permission to edit it.', 'error')
+        conn.close()
+        return redirect(url_for('teacher_dashboard'))
+
+    if request.method == 'POST':
+        title = request.form['title']
+        description = request.form.get('description', '')
+        due_date = request.form.get('due_date') or None
+
+        conn.execute('''
+            UPDATE tasks
+            SET title = ?, description = ?, due_date = ?
+            WHERE id = ?
+        ''', (title, description, due_date, task_id))
+        conn.commit()
+        conn.close()
+
+        flash('Task updated successfully!', 'success')
+        return redirect(url_for('student_progress', student_id=task['student_id']))
+
+    conn.close()
+    return render_template('edit_task.html', task=task)
+
+
 @app.route('/teacher/enter-marks', methods=['GET', 'POST'])
 @login_required
 @teacher_required
@@ -468,15 +547,16 @@ def assign_task():
 def student_progress(student_id):
     """View detailed progress for a specific student."""
     conn = get_db_connection()
-    
+
     student = conn.execute(
         'SELECT * FROM users WHERE id = ?', (student_id,)
     ).fetchone()
-    
+
     if not student:
         flash('Student not found.', 'error')
+        conn.close()
         return redirect(url_for('teacher_dashboard'))
-    
+
     # Get study logs
     study_logs = conn.execute('''
         SELECT sl.*, s.name as subject_name
@@ -485,41 +565,43 @@ def student_progress(student_id):
         WHERE sl.student_id = ?
         ORDER BY sl.study_date DESC
     ''', (student_id,)).fetchall()
-    
+
     # Get marks
     marks = conn.execute('''
-        SELECT m.*, s.name as subject_name
+        SELECT m.*, s.name as subject_name, u.full_name as teacher_name
         FROM marks m
         JOIN subjects s ON m.subject_id = s.id
+        JOIN users u ON m.entered_by = u.id
         WHERE m.student_id = ?
         ORDER BY m.created_at DESC
     ''', (student_id,)).fetchall()
-    
+
     # Calculate results with grades
     results = []
     for mark in marks:
-        percentage = (mark['marks_obtained'] / mark['max_marks']) * 100 if mark['max_marks'] else 0
+        percentage = (mark['marks_obtained'] / mark['max_marks']) * 100 if mark['max_marks'] else 0 if mark['max_marks'] else 0
         grade = calculate_grade(percentage)
         results.append({
+            'id': mark['id'],
             'subject_name': mark['subject_name'],
             'exam_name': mark['exam_name'],
             'marks_obtained': mark['marks_obtained'],
             'max_marks': mark['max_marks'],
             'percentage': round(percentage, 2),
-            'grade': grade
+            'grade': grade,
+            'can_edit': mark['entered_by'] == session['user_id']
         })
 
-    # Get assigned tasks for the student
     tasks = conn.execute('''
-        SELECT t.*, u.full_name as teacher_name
+        SELECT t.*, u.full_name as student_name
         FROM tasks t
-        JOIN users u ON t.teacher_id = u.id
-        WHERE t.student_id = ?
+        JOIN users u ON t.student_id = u.id
+        WHERE t.student_id = ? AND t.teacher_id = ?
         ORDER BY t.is_completed ASC, t.due_date ASC
-    ''', (student_id,)).fetchall()
-    
+    ''', (student_id, session['user_id'])).fetchall()
+
     conn.close()
-    
+
     return render_template('student_progress.html',
                          student=student,
                          study_logs=study_logs,

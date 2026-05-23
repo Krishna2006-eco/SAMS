@@ -66,6 +66,37 @@
     {% endif %}
 </div>
 
+<!-- Tasks -->
+<div class="card">
+    <h3>📝 Assigned Tasks</h3>
+    {% if tasks %}
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Due Date</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for task in tasks %}
+                <tr>
+                    <td>{{ task.title }}</td>
+                    <td>{{ task.due_date or '-' }}</td>
+                    <td>{{ 'Completed' if task.is_completed else 'Pending' }}</td>
+                    <td>
+                        <a href="{{ url_for('edit_task', task_id=task.id) }}" class="btn btn-small">Edit</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p class="empty-state">No tasks assigned by you yet.</p>
+    {% endif %}
+</div>
+
 <!-- Results -->
 <div class="card">
     <h3>📊 Results</h3>
@@ -78,6 +109,7 @@
                     <th>Marks</th>
                     <th>Percentage</th>
                     <th>Grade</th>
+                    <th>Edit</th>
                 </tr>
             </thead>
             <tbody>
@@ -88,6 +120,11 @@
                     <td>{{ result.marks_obtained }} / {{ result.max_marks }}</td>
                     <td>{{ result.percentage }}%</td>
                     <td class="grade-{{ result.grade }}">{{ result.grade }}</td>
+                    <td>
+                        {% if result.can_edit %}
+                            <a href="{{ url_for('edit_mark', mark_id=result.id) }}" class="btn btn-small">Edit</a>
+                        {% endif %}
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>

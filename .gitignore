@@ -1,13 +1,4 @@
 __pycache__/
 *.pyc
-*.pyo
-*.pyd
-
-venv/
-.env
-
-study_tracker.db
-
-.vscode/
 study_tracker.db
 venv/

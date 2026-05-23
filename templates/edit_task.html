@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Task - Study Tracker{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <h2>Edit Task for {{ task.student_name }}</h2>
+    <form method="POST" action="{{ url_for('edit_task', task_id=task.id) }}">
+        <div class="form-group">
+            <label>Student</label>
+            <input type="text" value="{{ task.student_name }}" disabled>
+        </div>
+
+        <div class="form-group">
+            <label for="title">Task Title</label>
+            <input type="text" id="title" name="title" value="{{ task.title }}" required>
+        </div>
+
+        <div class="form-group">
+            <label for="description">Description (optional)</label>
+            <textarea id="description" name="description" rows="4">{{ task.description or '' }}</textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="due_date">Due Date (optional)</label>
+            <input type="date" id="due_date" name="due_date" value="{{ task.due_date or '' }}">
+        </div>
+
+        <button type="submit" class="btn btn-primary">Update Task</button>
+        <a href="{{ url_for('student_progress', student_id=task.student_id) }}" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}
