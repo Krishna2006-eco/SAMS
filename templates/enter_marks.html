@@ -3,56 +3,304 @@
 {% block title %}Enter Marks - Study Tracker{% endblock %}
 
 {% block content %}
-<div class="form-container">
+<style>
+    .marks-container {
+        max-width: 1000px;
+        margin: 0 auto;
+    }
+
+    .selection-section {
+        background: #f9f9f9;
+        padding: 25px;
+        border-radius: 8px;
+        margin-bottom: 30px;
+        border: 1px solid #e0e0e0;
+    }
+
+    .selection-section h3 {
+        color: #333;
+        margin-top: 0;
+        margin-bottom: 20px;
+        font-size: 18px;
+    }
+
+    .selection-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        margin-bottom: 20px;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .form-group label {
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: #333;
+    }
+
+    .form-group select {
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+        background-color: white;
+        cursor: pointer;
+    }
+
+    .students-section {
+        display: none;
+    }
+
+    .students-section.active {
+        display: block;
+    }
+
+    .students-section h3 {
+        color: #333;
+        margin-bottom: 20px;
+        font-size: 18px;
+    }
+
+    .table-wrapper {
+        overflow-x: auto;
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+
+    .marks-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .marks-table thead {
+        background-color: #f5f5f5;
+        border-bottom: 2px solid #ddd;
+    }
+
+    .marks-table th {
+        padding: 15px;
+        text-align: left;
+        font-weight: 600;
+        color: #333;
+    }
+
+    .marks-table td {
+        padding: 15px;
+        border-bottom: 1px solid #eee;
+    }
+
+    .marks-table tbody tr:hover {
+        background-color: #f9f9f9;
+    }
+
+    .marks-table input[type="number"] {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+        box-sizing: border-box;
+    }
+
+    .marks-table input[type="number"]:focus {
+        outline: none;
+        border-color: #007bff;
+        box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
+    }
+
+    .btn-group {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-start;
+    }
+
+    .btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .btn-primary {
+        background-color: #007bff;
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background-color: #0056b3;
+    }
+
+    .btn-secondary {
+        background-color: #6c757d;
+        color: white;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .btn-secondary:hover {
+        background-color: #545b62;
+    }
+
+    .info-message {
+        background-color: #e3f2fd;
+        border: 1px solid #90caf9;
+        color: #1565c0;
+        padding: 15px;
+        border-radius: 4px;
+        margin-bottom: 20px;
+        display: none;
+    }
+
+    .info-message.active {
+        display: block;
+    }
+</style>
+
+<div class="marks-container">
     <h2>Enter Student Marks</h2>
-    <form method="POST" action="{{ url_for('enter_marks') }}">
-        <div class="form-group">
-            <label for="student_id">Student</label>
-            <select id="student_id" name="student_id" required>
-                <option value="">Select a student</option>
-                {% for student in students %}
-                    <option value="{{ student.id }}">{{ student.full_name }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        
-        <div class="form-group">
-            <label for="subject_id">Subject</label>
-            <select id="subject_id" name="subject_id" required>
-                <option value="">Select a subject</option>
-                {% for subject in subjects %}
-                    <option value="{{ subject.id }}">{{ subject.name }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        
-        <div class="form-group">
-            <label for="exam_name">Exam</label>
-            <select id="exam_name" name="exam_name" required>
-                <option value="">Select an exam</option>
-                <option value="Class Test 01">Class Test 01</option>
-                <option value="Class Test 02">Class Test 02</option>
-                <option value="Internal Examination">Internal Examination</option>
-                <option value="End Semester Examination">End Semester Examination</option>
-            </select>
-        </div>
-        
-        <div class="form-row">
+
+    <!-- Selection Section -->
+    <div class="selection-section">
+        <h3>Step 1: Select Subject and Exam</h3>
+        <div class="selection-row">
             <div class="form-group">
-                <label for="marks_obtained">Marks Obtained</label>
-                <input type="number" id="marks_obtained" name="marks_obtained" 
-                       step="0.5" min="0" required>
+                <label for="subject_id">Subject</label>
+                <select id="subject_id">
+                    <option value="">-- Select Subject --</option>
+                    {% for subject in subjects %}
+                        <option value="{{ subject.id }}">{{ subject.name }}</option>
+                    {% endfor %}
+                </select>
             </div>
-            
+
             <div class="form-group">
-                <label for="max_marks">Maximum Marks</label>
-                <input type="number" id="max_marks" name="max_marks" 
-                       value="100" min="1" required>
+                <label for="exam_name">Exam</label>
+                <select id="exam_name">
+                    <option value="">-- Select Exam --</option>
+                    <option value="Class Test 01">Class Test 01</option>
+                    <option value="Class Test 02">Class Test 02</option>
+                    <option value="Internal Examination">Internal Examination</option>
+                    <option value="End Semester Examination">End Semester Examination</option>
+                </select>
             </div>
         </div>
-        
-        <button type="submit" class="btn btn-primary">Submit Marks</button>
-        <a href="{{ url_for('teacher_dashboard') }}" class="btn btn-secondary">Cancel</a>
-    </form>
+    </div>
+
+    <!-- Info Message -->
+    <div class="info-message" id="infoMessage">
+        ✓ Selected: <strong id="selectionInfo"></strong>
+    </div>
+
+    <!-- Students Section -->
+    <div class="students-section" id="studentsSection">
+        <h3>Step 2: Enter Marks for All Students</h3>
+
+        <form method="POST" action="{{ url_for('enter_marks') }}" id="marksForm">
+            <input type="hidden" id="formSubjectId" name="subject_id">
+            <input type="hidden" id="formExamName" name="exam_name">
+
+            <div class="table-wrapper">
+                <table class="marks-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 25%;">Student Name</th>
+                            <th style="width: 20%;">Username</th>
+                            <th style="width: 25%;">Marks Obtained</th>
+                            <th style="width: 20%;">Maximum Marks</th>
+                        </tr>
+                    </thead>
+                    <tbody id="studentMarksBody">
+                        <!-- Students will be populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="btn-group">
+                <button type="submit" class="btn btn-primary">Submit All Marks</button>
+                <a href="{{ url_for('teacher_dashboard') }}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
 </div>
+
+<script>
+    const studentsData = {{ students | tojson }};
+    const subjectsData = {{ subjects | tojson }};
+    const subjectSelect = document.getElementById('subject_id');
+    const examSelect = document.getElementById('exam_name');
+    const studentsSection = document.getElementById('studentsSection');
+    const infoMessage = document.getElementById('infoMessage');
+    const selectionInfo = document.getElementById('selectionInfo');
+    const studentMarksBody = document.getElementById('studentMarksBody');
+    const formSubjectId = document.getElementById('formSubjectId');
+    const formExamName = document.getElementById('formExamName');
+
+    // Event listeners
+    subjectSelect.addEventListener('change', updateDisplay);
+    examSelect.addEventListener('change', updateDisplay);
+
+    function updateDisplay() {
+        const subjectId = subjectSelect.value;
+        const exam = examSelect.value;
+
+        if (subjectId && exam) {
+            // Get subject name
+            const subjectName = subjectsData.find(s => s.id == subjectId)?.name || '';
+
+            // Update info message
+            selectionInfo.textContent = `${subjectName} - ${exam}`;
+            infoMessage.classList.add('active');
+
+            // Update hidden form fields
+            formSubjectId.value = subjectId;
+            formExamName.value = exam;
+
+            // Populate students table
+            populateStudentsTable();
+
+            // Show students section
+            studentsSection.classList.add('active');
+
+            // Scroll to students section smoothly
+            setTimeout(() => {
+                studentsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 100);
+        } else {
+            // Hide students section
+            studentsSection.classList.remove('active');
+            infoMessage.classList.remove('active');
+        }
+    }
+
+    function populateStudentsTable() {
+        studentMarksBody.innerHTML = '';
+
+        studentsData.forEach((student, index) => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>
+                    <input type="hidden" name="student_id" value="${student.id}">
+                    ${student.full_name}
+                </td>
+                <td>${student.username}</td>
+                <td>
+                    <input type="number" name="marks_obtained[]" step="0.5" min="0" placeholder="Enter marks">
+                </td>
+                <td>
+                    <input type="number" name="max_marks[]" value="100" min="1">
+                </td>
+            `;
+            studentMarksBody.appendChild(row);
+        });
+    }
+</script>
 {% endblock %}

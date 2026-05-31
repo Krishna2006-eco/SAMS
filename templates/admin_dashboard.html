@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Dashboard - Study Tracker{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>Admin Dashboard</h2>
+    <p>Manage users, approve pending accounts, suspend users, and adjust roles.</p>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Username</th>
+                <th>Full Name</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+                <tr class="{% if user['status'] == 'pending' %}pending-row{% elif user['status'] == 'blocked' %}blocked-row{% endif %}">
+                    <td>{{ user['username'] }}</td>
+                    <td>{{ user['full_name'] }}</td>
+                    <td>{{ user['role'] }}</td>
+                    <td>{{ user['status'] }}</td>
+                    <td>
+                        {% if user['status'] == 'pending' %}
+                            <form method="POST" action="{{ url_for('admin_approve', user_id=user['id']) }}" style="display:inline-block; margin-right:0.5rem;">
+                                <button type="submit" class="btn btn-small btn-primary">Approve</button>
+                            </form>
+                        {% elif user['status'] == 'active' %}
+                            <form method="POST" action="{{ url_for('admin_block', user_id=user['id']) }}" style="display:inline-block; margin-right:0.5rem;">
+                                <button type="submit" class="btn btn-small btn-secondary">Block</button>
+                            </form>
+                        {% elif user['status'] == 'blocked' %}
+                            <form method="POST" action="{{ url_for('admin_approve', user_id=user['id']) }}" style="display:inline-block; margin-right:0.5rem;">
+                                <button type="submit" class="btn btn-small btn-primary">Unblock</button>
+                            </form>
+                        {% endif %}
+                        {% if user['role'] != 'admin' %}
+                            <form method="POST" action="{{ url_for('admin_set_role', user_id=user['id']) }}" style="display:inline-block; vertical-align: top;">
+                                <select name="role">
+                                    <option value="student" {% if user['role'] == 'student' %}selected{% endif %}>Student</option>
+                                    <option value="teacher" {% if user['role'] == 'teacher' %}selected{% endif %}>Teacher</option>
+                                </select>
+                                <button type="submit" class="btn btn-small">Save</button>
+                            </form>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

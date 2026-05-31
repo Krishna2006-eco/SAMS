@@ -41,6 +41,18 @@ def student_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+
+def admin_required(f):
+    """Decorator to require admin role."""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if session.get('role') != 'admin':
+            flash('Access denied', 'error')
+            return redirect(url_for('home'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+
 def calculate_grade(percentage):
     """Convert percentage to letter grade."""
     if percentage >= 90:
@@ -72,6 +84,10 @@ def register():
         role = request.form['role']
         full_name = request.form['full_name']
         
+        if role not in ('student', 'teacher'):
+            flash('Invalid role selected.', 'error')
+            return redirect(url_for('register'))
+
         conn = get_db_connection()
         
         # Check if username already exists
@@ -84,15 +100,15 @@ def register():
             conn.close()
             return redirect(url_for('register'))
         
-        # Insert new user
+        # Insert new user with pending approval
         conn.execute(
-            'INSERT INTO users (username, password, role, full_name) VALUES (?, ?, ?, ?)',
-            (username, password, role, full_name)
+            'INSERT INTO users (username, password, role, full_name, status) VALUES (?, ?, ?, ?, ?)',
+            (username, password, role, full_name, 'pending')
         )
         conn.commit()
         conn.close()
         
-        flash('Registration successful! Please log in.', 'success')
+        flash('Your account is pending admin approval.', 'success')
         return redirect(url_for('login'))
     
     return render_template('register.html')
@@ -112,6 +128,13 @@ def login():
         conn.close()
         
         if user:
+            if user['status'] == 'pending':
+                flash('Your account is awaiting admin approval.', 'error')
+                return redirect(url_for('login'))
+            if user['status'] == 'blocked':
+                flash('Your account has been suspended. Contact admin.', 'error')
+                return redirect(url_for('login'))
+
             session['user_id'] = user['id']
             session['username'] = user['username']
             session['role'] = user['role']
@@ -121,12 +144,98 @@ def login():
             
             if user['role'] == 'teacher':
                 return redirect(url_for('teacher_dashboard'))
-            else:
+            elif user['role'] == 'student':
                 return redirect(url_for('student_dashboard'))
+            else:
+                return redirect(url_for('admin_dashboard'))
         else:
             flash('Invalid username or password.', 'error')
     
     return render_template('login.html')
+
+@app.route('/admin')
+@login_required
+@admin_required
+def admin_dashboard():
+    conn = get_db_connection()
+    users = conn.execute('''
+        SELECT * FROM users
+        ORDER BY CASE status WHEN 'pending' THEN 0 WHEN 'active' THEN 1 WHEN 'blocked' THEN 2 ELSE 3 END, full_name
+    ''').fetchall()
+    conn.close()
+    return render_template('admin_dashboard.html', users=users)
+
+@app.route('/admin/approve/<int:user_id>', methods=['POST'])
+@login_required
+@admin_required
+def admin_approve(user_id):
+    if user_id == session['user_id']:
+        flash('Admins cannot modify their own account.', 'error')
+        return redirect(url_for('admin_dashboard'))
+
+    conn = get_db_connection()
+    user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
+    if not user:
+        flash('User not found.', 'error')
+        conn.close()
+        return redirect(url_for('admin_dashboard'))
+
+    conn.execute('UPDATE users SET status = ? WHERE id = ?', ('active', user_id))
+    conn.commit()
+    conn.close()
+    flash(f"{user['full_name']} is now active.", 'success')
+    return redirect(url_for('admin_dashboard'))
+
+@app.route('/admin/block/<int:user_id>', methods=['POST'])
+@login_required
+@admin_required
+def admin_block(user_id):
+    if user_id == session['user_id']:
+        flash('Admins cannot modify their own account.', 'error')
+        return redirect(url_for('admin_dashboard'))
+
+    conn = get_db_connection()
+    user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
+    if not user:
+        flash('User not found.', 'error')
+        conn.close()
+        return redirect(url_for('admin_dashboard'))
+
+    conn.execute('UPDATE users SET status = ? WHERE id = ?', ('blocked', user_id))
+    conn.commit()
+    conn.close()
+    flash(f"{user['full_name']} has been suspended.", 'success')
+    return redirect(url_for('admin_dashboard'))
+
+@app.route('/admin/set_role/<int:user_id>', methods=['POST'])
+@login_required
+@admin_required
+def admin_set_role(user_id):
+    if user_id == session['user_id']:
+        flash('Admins cannot modify their own account.', 'error')
+        return redirect(url_for('admin_dashboard'))
+
+    role = request.form.get('role')
+    if role not in ('student', 'teacher'):
+        flash('Invalid role selected.', 'error')
+        return redirect(url_for('admin_dashboard'))
+
+    conn = get_db_connection()
+    user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
+    if not user:
+        flash('User not found.', 'error')
+        conn.close()
+        return redirect(url_for('admin_dashboard'))
+
+    if user['role'] != role:
+        conn.execute('UPDATE users SET role = ? WHERE id = ?', (role, user_id))
+        conn.commit()
+        flash(f"{user['full_name']}'s role updated to {role}.", 'success')
+    else:
+        flash('No role changes were made.', 'success')
+
+    conn.close()
+    return redirect(url_for('admin_dashboard'))
 
 @app.route('/logout')
 def logout():
@@ -234,10 +343,9 @@ def add_study_log():
 @login_required
 @student_required
 def view_results():
-    """View marks and grades."""
+    """View exam summaries and grades."""
     conn = get_db_connection()
-    
-    # Get all marks for this student
+
     marks = conn.execute('''
         SELECT m.*, s.name as subject_name, u.full_name as teacher_name
         FROM marks m
@@ -246,35 +354,134 @@ def view_results():
         WHERE m.student_id = ?
         ORDER BY m.created_at DESC
     ''', (session['user_id'],)).fetchall()
-    
-    # Calculate totals and grade for each exam
-    results = []
-    for mark in marks:
-        percentage = (mark['marks_obtained'] / mark['max_marks']) * 100
-        grade = calculate_grade(percentage)
-        results.append({
+
+    exam_rows = conn.execute('''
+        SELECT m.exam_name,
+               COUNT(*) AS subject_count,
+               SUM(m.marks_obtained) AS total_obtained,
+               SUM(m.max_marks) AS total_max,
+               MAX(m.created_at) AS last_entered
+        FROM marks m
+        WHERE m.student_id = ?
+        GROUP BY m.exam_name
+        ORDER BY last_entered DESC
+    ''', (session['user_id'],)).fetchall()
+
+    exam_list = []
+    for exam in exam_rows:
+        percentage = (exam['total_obtained'] / exam['total_max']) * 100 if exam['total_max'] else 0
+        exam_list.append({
+            'exam_name': exam['exam_name'],
+            'subject_count': exam['subject_count'],
+            'total_obtained': exam['total_obtained'],
+            'total_max': exam['total_max'],
+            'percentage': round(percentage, 2),
+            'grade': calculate_grade(percentage),
+            'last_entered': exam['last_entered']
+        })
+
+    end_semester_marks = [mark for mark in marks if mark['exam_name'] == 'End Semester Examination']
+    total_obtained = sum(mark['marks_obtained'] for mark in end_semester_marks) if end_semester_marks else 0
+    total_max = sum(mark['max_marks'] for mark in end_semester_marks) if end_semester_marks else 0
+    overall_percentage = (total_obtained / total_max) * 100 if total_max > 0 else 0
+    overall_grade = calculate_grade(overall_percentage) if end_semester_marks else 'N/A'
+
+    rank_info = None
+    if end_semester_marks:
+        all_students = conn.execute('''
+            SELECT m.student_id, SUM(m.marks_obtained) as total
+            FROM marks m
+            WHERE m.exam_name = 'End Semester Examination'
+            GROUP BY m.student_id
+            ORDER BY total DESC
+        ''').fetchall()
+
+        for i, student in enumerate(all_students, 1):
+            if student['student_id'] == session['user_id']:
+                rank_info = {'rank': i, 'total_students': len(all_students), 'exam_name': 'End Semester Examination'}
+                break
+
+    conn.close()
+
+    return render_template('view_results.html',
+                         exam_list=exam_list,
+                         selected_exam=None,
+                         exam_results=[],
+                         total_obtained=total_obtained,
+                         total_max=total_max,
+                         overall_percentage=round(overall_percentage, 2),
+                         overall_grade=overall_grade,
+                         rank_info=rank_info)
+
+
+@app.route('/student/results/exam/<exam_name>')
+@login_required
+@student_required
+def view_results_exam(exam_name):
+    """View detailed subject results for a selected exam."""
+    conn = get_db_connection()
+
+    marks = conn.execute('''
+        SELECT m.*, s.name as subject_name, u.full_name as teacher_name
+        FROM marks m
+        JOIN subjects s ON m.subject_id = s.id
+        JOIN users u ON m.entered_by = u.id
+        WHERE m.student_id = ?
+        ORDER BY m.created_at DESC
+    ''', (session['user_id'],)).fetchall()
+
+    exam_rows = conn.execute('''
+        SELECT m.exam_name,
+               COUNT(*) AS subject_count,
+               SUM(m.marks_obtained) AS total_obtained,
+               SUM(m.max_marks) AS total_max,
+               MAX(m.created_at) AS last_entered
+        FROM marks m
+        WHERE m.student_id = ?
+        GROUP BY m.exam_name
+        ORDER BY last_entered DESC
+    ''', (session['user_id'],)).fetchall()
+
+    exam_list = []
+    for exam in exam_rows:
+        percentage = (exam['total_obtained'] / exam['total_max']) * 100 if exam['total_max'] else 0
+        exam_list.append({
+            'exam_name': exam['exam_name'],
+            'subject_count': exam['subject_count'],
+            'total_obtained': exam['total_obtained'],
+            'total_max': exam['total_max'],
+            'percentage': round(percentage, 2),
+            'grade': calculate_grade(percentage),
+            'last_entered': exam['last_entered']
+        })
+
+    exam_marks = conn.execute('''
+        SELECT m.*, s.name as subject_name, u.full_name as teacher_name
+        FROM marks m
+        JOIN subjects s ON m.subject_id = s.id
+        JOIN users u ON m.entered_by = u.id
+        WHERE m.student_id = ? AND m.exam_name = ?
+        ORDER BY m.created_at DESC
+    ''', (session['user_id'], exam_name)).fetchall()
+
+    exam_results = []
+    for mark in exam_marks:
+        percentage = (mark['marks_obtained'] / mark['max_marks']) * 100 if mark['max_marks'] else 0
+        exam_results.append({
             'subject_name': mark['subject_name'],
             'exam_name': mark['exam_name'],
             'marks_obtained': mark['marks_obtained'],
             'max_marks': mark['max_marks'],
             'percentage': round(percentage, 2),
-            'grade': grade,
+            'grade': calculate_grade(percentage),
             'teacher_name': mark['teacher_name']
         })
-    
-    # Calculate overall statistics
-    if results:
-        total_obtained = sum(r['marks_obtained'] for r in results)
-        total_max = sum(r['max_marks'] for r in results)
-        overall_percentage = (total_obtained / total_max) * 100 if total_max > 0 else 0
-        overall_grade = calculate_grade(overall_percentage)
-    else:
-        total_obtained = 0
-        total_max = 0
-        overall_percentage = 0
-        overall_grade = 'N/A'
-    
-    # Get rank among all students (for the most recent exam)
+
+    total_obtained = sum(mark['marks_obtained'] for mark in marks) if marks else 0
+    total_max = sum(mark['max_marks'] for mark in marks) if marks else 0
+    overall_percentage = (total_obtained / total_max) * 100 if total_max > 0 else 0
+    overall_grade = calculate_grade(overall_percentage) if marks else 'N/A'
+
     rank_info = None
     if marks:
         latest_exam = marks[0]['exam_name']
@@ -285,21 +492,24 @@ def view_results():
             GROUP BY m.student_id
             ORDER BY total DESC
         ''', (latest_exam,)).fetchall()
-        
+
         for i, student in enumerate(all_students, 1):
             if student['student_id'] == session['user_id']:
                 rank_info = {'rank': i, 'total_students': len(all_students), 'exam_name': latest_exam}
                 break
-    
+
     conn.close()
-    
+
     return render_template('view_results.html',
-                         results=results,
+                         exam_list=exam_list,
+                         selected_exam=exam_name,
+                         exam_results=exam_results,
                          total_obtained=total_obtained,
                          total_max=total_max,
                          overall_percentage=round(overall_percentage, 2),
                          overall_grade=overall_grade,
                          rank_info=rank_info)
+
 
 @app.route('/student/complete-task/<int:task_id>')
 @login_required
@@ -504,28 +714,46 @@ def edit_task(task_id):
 @login_required
 @teacher_required
 def enter_marks():
-    """Enter marks for a student."""
+    """Enter marks for multiple students."""
     conn = get_db_connection()
-    students = conn.execute('''
+    students_rows = conn.execute('''
         SELECT * FROM users WHERE role = 'student' ORDER BY full_name
     ''').fetchall()
-    subjects = conn.execute('SELECT * FROM subjects ORDER BY name').fetchall()
+    subjects_rows = conn.execute('SELECT * FROM subjects ORDER BY name').fetchall()
+    
+    # Convert Row objects to dictionaries
+    students = [dict(student) for student in students_rows]
+    subjects = [dict(subject) for subject in subjects_rows]
     
     if request.method == 'POST':
-        student_id = request.form['student_id']
-        subject_id = request.form['subject_id']
-        marks_obtained = float(request.form['marks_obtained'])
-        max_marks = float(request.form['max_marks'])
-        exam_name = request.form['exam_name']
+        subject_id = request.form.get('subject_id')
+        exam_name = request.form.get('exam_name')
         
-        conn.execute('''
-            INSERT INTO marks (student_id, subject_id, marks_obtained, max_marks, exam_name, entered_by)
-            VALUES (?, ?, ?, ?, ?, ?)
-        ''', (student_id, subject_id, marks_obtained, max_marks, exam_name, session['user_id']))
-        conn.commit()
+        # Get all student marks data
+        student_ids = request.form.getlist('student_id')
+        marks_obtained_list = request.form.getlist('marks_obtained[]')
+        max_marks_list = request.form.getlist('max_marks[]')
+        
+        if student_ids and subject_id and exam_name:
+            try:
+                for i, student_id in enumerate(student_ids):
+                    marks_obtained = marks_obtained_list[i]
+                    max_marks = max_marks_list[i] if max_marks_list[i] else '100'
+                    
+                    # Only insert if marks are provided
+                    if marks_obtained and marks_obtained.strip():
+                        conn.execute('''
+                            INSERT INTO marks (student_id, subject_id, marks_obtained, max_marks, exam_name, entered_by)
+                            VALUES (?, ?, ?, ?, ?, ?)
+                        ''', (student_id, subject_id, float(marks_obtained), float(max_marks), exam_name, session['user_id']))
+                
+                conn.commit()
+                flash('Marks entered successfully for all students!', 'success')
+            except Exception as e:
+                conn.rollback()
+                flash(f'Error entering marks: {str(e)}', 'error')
+        
         conn.close()
-        
-        flash('Marks entered successfully!', 'success')
         return redirect(url_for('teacher_dashboard'))
     
     conn.close()
@@ -560,6 +788,122 @@ def assign_task():
     conn.close()
     return render_template('assign_task.html', students=students)
 
+@app.route('/teacher/student-study/<int:student_id>')
+@login_required
+@teacher_required
+def student_study_activity(student_id):
+    """View study sessions only for a specific student."""
+    conn = get_db_connection()
+
+    student = conn.execute(
+        'SELECT * FROM users WHERE id = ?', (student_id,)
+    ).fetchone()
+
+    if not student:
+        flash('Student not found.', 'error')
+        conn.close()
+        return redirect(url_for('teacher_dashboard'))
+
+    study_logs = conn.execute('''
+        SELECT sl.*, s.name as subject_name
+        FROM study_logs sl
+        JOIN subjects s ON sl.subject_id = s.id
+        WHERE sl.student_id = ?
+        ORDER BY sl.study_date DESC
+    ''', (student_id,)).fetchall()
+
+    conn.close()
+    return render_template('student_progress.html',
+                         student=student,
+                         study_logs=study_logs,
+                         results=[],
+                         tasks=[],
+                         show_full_progress=False)
+
+
+@app.route('/teacher/student-progress/<int:student_id>/exam/<exam_name>')
+@login_required
+@teacher_required
+def student_progress_exam(student_id, exam_name):
+    """View subject-level results for a specific exam."""
+    conn = get_db_connection()
+
+    student = conn.execute(
+        'SELECT * FROM users WHERE id = ?', (student_id,)
+    ).fetchone()
+
+    if not student:
+        flash('Student not found.', 'error')
+        conn.close()
+        return redirect(url_for('teacher_dashboard'))
+
+    exam_rows = conn.execute('''
+        SELECT m.exam_name,
+               COUNT(*) AS subject_count,
+               SUM(m.marks_obtained) AS total_obtained,
+               SUM(m.max_marks) AS total_max,
+               MAX(m.created_at) AS last_entered
+        FROM marks m
+        WHERE m.student_id = ?
+        GROUP BY m.exam_name
+        ORDER BY last_entered DESC
+    ''', (student_id,)).fetchall()
+
+    exam_list = []
+    for exam in exam_rows:
+        percentage = (exam['total_obtained'] / exam['total_max']) * 100 if exam['total_max'] else 0
+        exam_list.append({
+            'exam_name': exam['exam_name'],
+            'subject_count': exam['subject_count'],
+            'total_obtained': exam['total_obtained'],
+            'total_max': exam['total_max'],
+            'percentage': round(percentage, 2),
+            'grade': calculate_grade(percentage),
+            'last_entered': exam['last_entered']
+        })
+
+    exam_results = conn.execute('''
+        SELECT m.*, s.name as subject_name, u.full_name as teacher_name
+        FROM marks m
+        JOIN subjects s ON m.subject_id = s.id
+        JOIN users u ON m.entered_by = u.id
+        WHERE m.student_id = ? AND m.exam_name = ?
+        ORDER BY m.created_at DESC
+    ''', (student_id, exam_name)).fetchall()
+
+    results = []
+    for mark in exam_results:
+        percentage = (mark['marks_obtained'] / mark['max_marks']) * 100 if mark['max_marks'] else 0
+        results.append({
+            'id': mark['id'],
+            'subject_name': mark['subject_name'],
+            'exam_name': mark['exam_name'],
+            'marks_obtained': mark['marks_obtained'],
+            'max_marks': mark['max_marks'],
+            'percentage': round(percentage, 2),
+            'grade': calculate_grade(percentage),
+            'can_edit': mark['entered_by'] == session['user_id']
+        })
+
+    tasks = conn.execute('''
+        SELECT t.*, u.full_name as student_name
+        FROM tasks t
+        JOIN users u ON t.student_id = u.id
+        WHERE t.student_id = ? AND t.teacher_id = ?
+        ORDER BY t.is_completed ASC, t.due_date ASC
+    ''', (student_id, session['user_id'])).fetchall()
+
+    conn.close()
+
+    return render_template('student_progress.html',
+                         student=student,
+                         exam_list=exam_list,
+                         exam_results=results,
+                         selected_exam=exam_name,
+                         tasks=tasks,
+                         show_full_progress=True)
+
+
 @app.route('/teacher/student-progress/<int:student_id>')
 @login_required
 @teacher_required
@@ -585,30 +929,30 @@ def student_progress(student_id):
         ORDER BY sl.study_date DESC
     ''', (student_id,)).fetchall()
 
-    # Get marks
-    marks = conn.execute('''
-        SELECT m.*, s.name as subject_name, u.full_name as teacher_name
+    # Get exam summaries
+    exam_rows = conn.execute('''
+        SELECT m.exam_name,
+               COUNT(*) AS subject_count,
+               SUM(m.marks_obtained) AS total_obtained,
+               SUM(m.max_marks) AS total_max,
+               MAX(m.created_at) AS last_entered
         FROM marks m
-        JOIN subjects s ON m.subject_id = s.id
-        JOIN users u ON m.entered_by = u.id
         WHERE m.student_id = ?
-        ORDER BY m.created_at DESC
+        GROUP BY m.exam_name
+        ORDER BY last_entered DESC
     ''', (student_id,)).fetchall()
 
-    # Calculate results with grades
-    results = []
-    for mark in marks:
-        percentage = (mark['marks_obtained'] / mark['max_marks']) * 100 if mark['max_marks'] else 0 if mark['max_marks'] else 0
-        grade = calculate_grade(percentage)
-        results.append({
-            'id': mark['id'],
-            'subject_name': mark['subject_name'],
-            'exam_name': mark['exam_name'],
-            'marks_obtained': mark['marks_obtained'],
-            'max_marks': mark['max_marks'],
+    exam_list = []
+    for exam in exam_rows:
+        percentage = (exam['total_obtained'] / exam['total_max']) * 100 if exam['total_max'] else 0
+        exam_list.append({
+            'exam_name': exam['exam_name'],
+            'subject_count': exam['subject_count'],
+            'total_obtained': exam['total_obtained'],
+            'total_max': exam['total_max'],
             'percentage': round(percentage, 2),
-            'grade': grade,
-            'can_edit': mark['entered_by'] == session['user_id']
+            'grade': calculate_grade(percentage),
+            'last_entered': exam['last_entered']
         })
 
     tasks = conn.execute('''
@@ -623,9 +967,9 @@ def student_progress(student_id):
 
     return render_template('student_progress.html',
                          student=student,
-                         study_logs=study_logs,
-                         results=results,
-                         tasks=tasks)
+                         exam_list=exam_list,
+                         tasks=tasks,
+                         show_full_progress=True)
 
 # Run the app
 if __name__ == '__main__':
