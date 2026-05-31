@@ -353,6 +353,14 @@ textarea {
     background: rgba(79, 70, 229, 0.08);
 }
 
+.pending-row {
+    background: #fef3c7;
+}
+
+.blocked-row {
+    background: #fee2e2;
+}
+
 .task-list {
     list-style: none;
 }

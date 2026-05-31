@@ -18,10 +18,12 @@
                     <a href="{{ url_for('teacher_dashboard') }}">Dashboard</a>
                     <a href="{{ url_for('enter_marks') }}">Enter Marks</a>
                     <a href="{{ url_for('assign_task') }}">Assign Task</a>
-                {% else %}
+                {% elif session.get('role') == 'student' %}
                     <a href="{{ url_for('student_dashboard') }}">Dashboard</a>
                     <a href="{{ url_for('add_study_log') }}">Log Study</a>
                     <a href="{{ url_for('view_results') }}">My Results</a>
+                {% elif session.get('role') == 'admin' %}
+                    <a href="{{ url_for('admin_dashboard') }}">Admin Panel</a>
                 {% endif %}
                 <a href="{{ url_for('logout') }}" class="btn-logout">Logout</a>
             {% else %}
@@ -46,7 +48,7 @@
     </main>
 
     <footer>
-        <p>&copy; 2025 Study Progress & Result Manager</p>
+        <p>&copy; 2026 Study Progress & Result Manager</p>
     </footer>
 </body>
 </html>

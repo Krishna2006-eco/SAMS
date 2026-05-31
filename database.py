@@ -19,17 +19,54 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT UNIQUE NOT NULL,
             password TEXT NOT NULL,
-            role TEXT NOT NULL CHECK(role IN ('teacher', 'student')),
+            role TEXT NOT NULL CHECK(role IN ('teacher', 'student', 'admin')),
             full_name TEXT NOT NULL,
+            status TEXT NOT NULL CHECK(status IN ('pending', 'active', 'blocked')) DEFAULT 'pending',
             department TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
 
-    # Ensure the department column exists for older databases.
+    # Ensure the department and status columns exist for older databases.
     existing_columns = [row[1] for row in cursor.execute("PRAGMA table_info(users)").fetchall()]
     if 'department' not in existing_columns:
         cursor.execute('ALTER TABLE users ADD COLUMN department TEXT')
+    if 'status' not in existing_columns:
+        try:
+            cursor.execute("ALTER TABLE users ADD COLUMN status VARCHAR(20) DEFAULT 'pending'")
+        except sqlite3.OperationalError:
+            pass
+
+    # If the old users table still has the old role constraint, rebuild it with admin support.
+    current_sql_row = cursor.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='users'").fetchone()
+    if current_sql_row and "CHECK(role IN ('teacher', 'student'))" in current_sql_row[0]:
+        cursor.execute('PRAGMA foreign_keys = OFF')
+        cursor.execute('BEGIN TRANSACTION')
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS users_new (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT UNIQUE NOT NULL,
+                password TEXT NOT NULL,
+                role TEXT NOT NULL CHECK(role IN ('teacher', 'student', 'admin')),
+                full_name TEXT NOT NULL,
+                status TEXT NOT NULL CHECK(status IN ('pending', 'active', 'blocked')) DEFAULT 'pending',
+                department TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        cursor.execute('''
+            INSERT INTO users_new (id, username, password, role, full_name, status, department, created_at)
+            SELECT id, username, password, role, full_name,
+                   COALESCE(status, 'pending'), department, created_at
+            FROM users
+        ''')
+        cursor.execute('DROP TABLE users')
+        cursor.execute('ALTER TABLE users_new RENAME TO users')
+        cursor.execute('COMMIT')
+        cursor.execute('PRAGMA foreign_keys = ON')
+
+    # Ensure existing users are not locked out after migration.
+    cursor.execute("UPDATE users SET status = 'active' WHERE status IS NULL AND role IN ('teacher', 'student', 'admin')")
     
     # Subjects table
     cursor.execute('''

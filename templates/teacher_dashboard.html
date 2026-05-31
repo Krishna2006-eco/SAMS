@@ -64,7 +64,7 @@
                     <td>{{ log.last_activity }}</td>
                     <td>{{ log.subjects_covered }}</td>
                     <td>{{ log.total_hours }} hrs</td>
-                    <td><a href="{{ url_for('student_progress', student_id=log.student_id) }}" class="btn btn-small">View Activity</a></td>
+                    <td><a href="{{ url_for('student_study_activity', student_id=log.student_id) }}" class="btn btn-small">View Activity</a></td>
                 </tr>
                 {% endfor %}
             </tbody>

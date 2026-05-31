@@ -6,6 +6,7 @@
 <h1>{{ student.full_name }}'s Progress</h1>
 <p><a href="{{ url_for('teacher_dashboard') }}">&larr; Back to Dashboard</a></p>
 
+{% if not show_full_progress %}
 <!-- Study Logs -->
 <div class="card">
     <h3>📖 Study Sessions</h3>
@@ -35,6 +36,81 @@
     {% endif %}
 </div>
 
+{% endif %}
+
+{% if show_full_progress %}
+<!-- Exam Results -->
+<div class="card">
+    <h3>📊 Exam Results</h3>
+    {% if selected_exam %}
+        <p>Showing results for <strong>{{ selected_exam }}</strong>.</p>
+        {% if exam_results %}
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Subject</th>
+                        <th>Marks</th>
+                        <th>Percentage</th>
+                        <th>Grade</th>
+                        <th>Edit</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for result in exam_results %}
+                    <tr>
+                        <td>{{ result.subject_name }}</td>
+                        <td>{{ result.marks_obtained }} / {{ result.max_marks }}</td>
+                        <td>{{ result.percentage }}%</td>
+                        <td class="grade-{{ result.grade }}">{{ result.grade }}</td>
+                        <td>
+                            {% if result.can_edit %}
+                                <a href="{{ url_for('edit_mark', mark_id=result.id) }}" class="btn btn-small">Edit</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <p><a href="{{ url_for('student_progress', student_id=student.id) }}" class="btn btn-secondary">Back to exams</a></p>
+        {% else %}
+            <p class="empty-state">No results found for this exam.</p>
+            <p><a href="{{ url_for('student_progress', student_id=student.id) }}" class="btn btn-secondary">Back to exams</a></p>
+        {% endif %}
+    {% else %}
+        {% if exam_list %}
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Exam</th>
+                        <th>Subjects</th>
+                        <th>Total Marks</th>
+                        <th>Percentage</th>
+                        <th>Grade</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for exam in exam_list %}
+                    <tr>
+                        <td>{{ exam.exam_name }}</td>
+                        <td>{{ exam.subject_count }}</td>
+                        <td>{{ exam.total_obtained }} / {{ exam.total_max }}</td>
+                        <td>{{ exam.percentage }}%</td>
+                        <td class="grade-{{ exam.grade }}">{{ exam.grade }}</td>
+                        <td>
+                            <a href="{{ url_for('student_progress_exam', student_id=student.id, exam_name=exam.exam_name) }}" class="btn btn-small">View Exam</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p class="empty-state">No exam results yet.</p>
+        {% endif %}
+    {% endif %}
+</div>
+
+{% if not selected_exam %}
 <!-- Tasks -->
 <div class="card">
     <h3>📝 Assigned Tasks</h3>
@@ -65,41 +141,6 @@
         <p class="empty-state">No tasks assigned by you yet.</p>
     {% endif %}
 </div>
-
-<!-- Results -->
-<div class="card">
-    <h3>📊 Results</h3>
-    {% if results %}
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>Subject</th>
-                    <th>Exam</th>
-                    <th>Marks</th>
-                    <th>Percentage</th>
-                    <th>Grade</th>
-                    <th>Edit</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for result in results %}
-                <tr>
-                    <td>{{ result.subject_name }}</td>
-                    <td>{{ result.exam_name }}</td>
-                    <td>{{ result.marks_obtained }} / {{ result.max_marks }}</td>
-                    <td>{{ result.percentage }}%</td>
-                    <td class="grade-{{ result.grade }}">{{ result.grade }}</td>
-                    <td>
-                        {% if result.can_edit %}
-                            <a href="{{ url_for('edit_mark', mark_id=result.id) }}" class="btn btn-small">Edit</a>
-                        {% endif %}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    {% else %}
-        <p class="empty-state">No marks entered yet.</p>
-    {% endif %}
-</div>
+{% endif %}
+{% endif %}
 {% endblock %}
