@@ -93,16 +93,47 @@
     {% endif %}
 </div>
 
-<!-- Grade Scale -->
+<!-- Marks Trend Graph -->
+{% if trend_labels and marks_trend %}
 <div class="card">
-    <h3>📏 Grade Scale</h3>
-    <table class="data-table grade-scale">
-        <tr><td>A+</td><td>90% and above</td></tr>
-        <tr><td>A</td><td>80% - 89%</td></tr>
-        <tr><td>B</td><td>70% - 79%</td></tr>
-        <tr><td>C</td><td>60% - 69%</td></tr>
-        <tr><td>D</td><td>50% - 59%</td></tr>
-        <tr><td>F</td><td>Below 50%</td></tr>
-    </table>
+    <h3>📈 Marks Trend</h3>
+    <canvas id="marksTrendChart" width="600" height="300"></canvas>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        (function(){
+            const labels = {{ trend_labels|tojson }};
+            const dataPoints = {{ marks_trend|tojson }};
+
+            const ctx = document.getElementById('marksTrendChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Total Percentage',
+                        data: dataPoints,
+                        fill: false,
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        tension: 0.2,
+                        pointRadius: 5,
+                        spanGaps: true
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            suggestedMin: 0,
+                            suggestedMax: 100,
+                            title: { display: true, text: 'Percentage' }
+                        }
+                    },
+                    plugins: {
+                        tooltip: { callbacks: { label: function(ctx){ return ctx.parsed.y !== null ? ctx.parsed.y + '%' : 'No data'; } } }
+                    }
+                }
+            });
+        })();
+    </script>
 </div>
+{% endif %}
 {% endblock %}

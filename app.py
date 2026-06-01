@@ -433,6 +433,11 @@ def view_results():
 
     conn.close()
 
+    # Prepare marks trend for common exams in a fixed order
+    trend_labels = ['Class Test 01', 'Class Test 02', 'Internal Examination', 'End Semester Examination']
+    exam_pct_map = {e['exam_name']: e['percentage'] for e in exam_list}
+    marks_trend = [exam_pct_map.get(label) for label in trend_labels]
+
     return render_template('view_results.html',
                          exam_list=exam_list,
                          selected_exam=None,
@@ -441,7 +446,9 @@ def view_results():
                          total_max=total_max,
                          overall_percentage=round(overall_percentage, 2),
                          overall_grade=overall_grade,
-                         rank_info=rank_info)
+                         rank_info=rank_info,
+                         trend_labels=trend_labels,
+                         marks_trend=marks_trend)
 
 
 @app.route('/student/results/exam/<exam_name>')
@@ -530,6 +537,11 @@ def view_results_exam(exam_name):
 
     conn.close()
 
+    # Prepare marks trend for common exams in a fixed order
+    trend_labels = ['Class Test 01', 'Class Test 02', 'Internal Examination', 'End Semester Examination']
+    exam_pct_map = {e['exam_name']: e['percentage'] for e in exam_list}
+    marks_trend = [exam_pct_map.get(label) for label in trend_labels]
+
     return render_template('view_results.html',
                          exam_list=exam_list,
                          selected_exam=exam_name,
@@ -538,7 +550,9 @@ def view_results_exam(exam_name):
                          total_max=total_max,
                          overall_percentage=round(overall_percentage, 2),
                          overall_grade=overall_grade,
-                         rank_info=rank_info)
+                         rank_info=rank_info,
+                         trend_labels=trend_labels,
+                         marks_trend=marks_trend)
 
 
 @app.route('/student/complete-task/<int:task_id>')
