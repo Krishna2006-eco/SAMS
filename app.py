@@ -255,6 +255,72 @@ def admin_set_role(user_id):
     conn.close()
     return redirect(url_for('admin_dashboard'))
 
+@app.route('/admin/edit/<int:user_id>', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def admin_edit_user(user_id):
+    if user_id == session['user_id']:
+        flash('Admins cannot modify their own account.', 'error')
+        return redirect(url_for('admin_dashboard'))
+
+    conn = get_db_connection()
+    user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
+
+    if not user:
+        flash('User not found.', 'error')
+        conn.close()
+        return redirect(url_for('admin_dashboard'))
+
+    if request.method == 'POST':
+        username = request.form.get('username', '').strip()
+        full_name = request.form.get('full_name', '').strip()
+        password = request.form.get('password', '').strip()
+
+        if not username:
+            flash('Username cannot be empty.', 'error')
+            conn.close()
+            return render_template('edit_user.html', user=user)
+
+        if not full_name:
+            flash('Full name cannot be empty.', 'error')
+            conn.close()
+            return render_template('edit_user.html', user=user)
+
+        if username != user['username']:
+            existing = conn.execute(
+                'SELECT id FROM users WHERE username = ? AND id != ?',
+                (username, user_id)
+            ).fetchone()
+            if existing:
+                flash('Username already exists. Please choose another.', 'error')
+                conn.close()
+                return render_template('edit_user.html', user=user)
+
+        try:
+            if password:
+                conn.execute(
+                    'UPDATE users SET username = ?, full_name = ?, password = ? WHERE id = ?',
+                    (username, full_name, password, user_id)
+                )
+                flash(f"User updated successfully. Password changed.", 'success')
+            else:
+                conn.execute(
+                    'UPDATE users SET username = ?, full_name = ? WHERE id = ?',
+                    (username, full_name, user_id)
+                )
+                flash(f"User updated successfully.", 'success')
+
+            conn.commit()
+            conn.close()
+            return redirect(url_for('admin_dashboard'))
+        except Exception as e:
+            flash(f'Error updating user: {str(e)}', 'error')
+            conn.close()
+            return render_template('edit_user.html', user=user)
+
+    conn.close()
+    return render_template('edit_user.html', user=user)
+
 @app.route('/logout')
 def logout():
     """Log out the user."""

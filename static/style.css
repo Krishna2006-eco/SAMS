@@ -156,46 +156,10 @@ textarea {
 }
 
 .nav-brand a {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.8rem;
-    text-decoration: none;
-    color: var(--auth-brand-text);
-    transition: opacity 0.3s ease, transform 0.3s ease;
-}
-
-.nav-brand a:hover {
-    opacity: 0.9;
-    transform: scale(1.05);
-}
-
-.logo-link {
-    display: flex;
-    align-items: center;
-    gap: 0.8rem;
-}
-
-.logo-lamp {
-    width: 40px;
-    height: 40px;
-    filter: drop-shadow(0 0 8px rgba(254, 240, 138, 0.4));
-    transition: filter 0.3s ease;
-}
-
-.nav-brand a:hover .logo-lamp {
-    filter: drop-shadow(0 0 12px rgba(254, 240, 138, 0.6));
-}
-
-.logo-text {
     font-size: 1.4rem;
-    font-weight: 800;
+    font-weight: 700;
     letter-spacing: -0.02em;
-    background: linear-gradient(90deg, #a855f7 0%, #ec4899 25%, #f97316 50%, #3b82f6 75%, #a855f7 100%);
-    background-size: 200% 100%;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: var(--auth-brand-text);
 }
 
 .nav-links {
@@ -635,15 +599,6 @@ footer p {
         justify-content: center;
     }
 
-    .logo-lamp {
-        width: 36px;
-        height: 36px;
-    }
-
-    .logo-text {
-        font-size: 1.2rem;
-    }
-
     .hero-logo-section {
         gap: 1.5rem;
     }
@@ -674,14 +629,5 @@ footer p {
 
     .form-row {
         grid-template-columns: 1fr;
-    }
-
-    .logo-lamp {
-        width: 32px;
-        height: 32px;
-    }
-
-    .logo-text {
-        font-size: 1rem;
     }
 }
