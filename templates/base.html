@@ -12,7 +12,46 @@
 <body class="{{ current_user.theme if current_user.is_authenticated else 'light' }}">
     <nav class="navbar">
         <div class="nav-brand">
-            <a href="{{ url_for('home') }}">📚 SAMS</a>
+            <a href="{{ url_for('home') }}" class="logo-link">
+                <svg class="logo-lamp" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <filter id="lampGlow">
+                            <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                            <feMerge>
+                                <feMergeNode in="coloredBlur"/>
+                                <feMergeNode in="SourceGraphic"/>
+                            </feMerge>
+                        </filter>
+                        <linearGradient id="bulbGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" style="stop-color:#fef08a;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#fcd34d;stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+
+                    <!-- Glow effect background -->
+                    <circle cx="32" cy="24" r="18" fill="#fef08a" opacity="0.2" filter="url(#lampGlow)"/>
+
+                    <!-- Lamp post -->
+                    <rect x="30" y="28" width="4" height="20" fill="#8b7355" rx="2"/>
+
+                    <!-- Lamp base -->
+                    <ellipse cx="32" cy="50" rx="8" ry="3" fill="#8b7355"/>
+                    <rect x="26" y="49" width="12" height="3" fill="#a0826d" rx="1"/>
+
+                    <!-- Bulb glow (larger) -->
+                    <circle cx="32" cy="24" r="16" fill="url(#bulbGradient)" opacity="0.4" filter="url(#lampGlow)"/>
+
+                    <!-- Bulb -->
+                    <circle cx="32" cy="24" r="14" fill="url(#bulbGradient)" filter="url(#lampGlow)"/>
+
+                    <!-- Bulb highlight -->
+                    <circle cx="28" cy="20" r="5" fill="#fffbeb" opacity="0.6"/>
+
+                    <!-- Lamp shade outline -->
+                    <path d="M 22 28 L 20 32 L 44 32 L 42 28 Q 32 24 22 28" fill="none" stroke="#d4a574" stroke-width="1.5"/>
+                </svg>
+                <span class="logo-text">SAMS</span>
+            </a>
         </div>
         <div class="nav-links">
             {% if current_user.is_authenticated %}
