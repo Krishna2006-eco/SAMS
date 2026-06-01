@@ -4,15 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}SAMS{% endblock %}</title>
+    <style>
+      body.dark { background: #0f172a !important; }
+    </style>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-<body>
+<body class="{{ current_user.theme if current_user.is_authenticated else 'light' }}">
     <nav class="navbar">
         <div class="nav-brand">
             <a href="{{ url_for('home') }}">📚 SAMS</a>
         </div>
         <div class="nav-links">
-            {% if session.get('user_id') %}
+            {% if current_user.is_authenticated %}
+                <form action="{{ url_for('toggle_theme') }}" method="POST" style="display:inline;">
+                  <button type="submit" class="theme-toggle">
+                    {% if current_user.theme == 'dark' %}☀️ Light{% else %}🌙 Dark{% endif %}
+                  </button>
+                </form>
                 <span class="welcome-text">Hello, {{ session.get('full_name') }}</span>
                 {% if session.get('role') == 'teacher' %}
                     <a href="{{ url_for('teacher_dashboard') }}">Dashboard</a>

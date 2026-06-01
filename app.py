@@ -53,6 +53,23 @@ def admin_required(f):
     return decorated_function
 
 
+class CurrentUser:
+    def __init__(self, session):
+        self.id = session.get('user_id')
+        self.theme = session.get('theme', 'light')
+        self.username = session.get('username')
+        self.full_name = session.get('full_name')
+
+    @property
+    def is_authenticated(self):
+        return bool(self.id)
+
+
+@app.context_processor
+def inject_current_user():
+    return {'current_user': CurrentUser(session)}
+
+
 def calculate_grade(percentage):
     """Convert percentage to letter grade."""
     if percentage >= 90:
@@ -100,10 +117,10 @@ def register():
             conn.close()
             return redirect(url_for('register'))
         
-        # Insert new user with pending approval
+        # Insert new user with pending approval and default theme
         conn.execute(
-            'INSERT INTO users (username, password, role, full_name, status) VALUES (?, ?, ?, ?, ?)',
-            (username, password, role, full_name, 'pending')
+            'INSERT INTO users (username, password, role, full_name, status, theme) VALUES (?, ?, ?, ?, ?, ?)',
+            (username, password, role, full_name, 'pending', 'light')
         )
         conn.commit()
         conn.close()
@@ -139,6 +156,7 @@ def login():
             session['username'] = user['username']
             session['role'] = user['role']
             session['full_name'] = user['full_name']
+            session['theme'] = user['theme'] if 'theme' in user.keys() and user['theme'] else 'light'
             
             flash(f'Welcome back, {user["full_name"]}!', 'success')
             
@@ -243,6 +261,18 @@ def logout():
     session.clear()
     flash('You have been logged out.', 'success')
     return redirect(url_for('home'))
+
+@app.route('/toggle_theme', methods=['POST'])
+@login_required
+def toggle_theme():
+    current_theme = session.get('theme', 'light')
+    new_theme = 'dark' if current_theme == 'light' else 'light'
+    conn = get_db_connection()
+    conn.execute('UPDATE users SET theme = ? WHERE id = ?', (new_theme, session['user_id']))
+    conn.commit()
+    conn.close()
+    session['theme'] = new_theme
+    return redirect(request.referrer or url_for('home'))
 
 # ----- Student Routes -----
 
@@ -973,4 +1003,10 @@ def student_progress(student_id):
 
 # Run the app
 if __name__ == '__main__':
+    with get_db_connection() as conn:
+        try:
+            conn.execute("ALTER TABLE users ADD COLUMN theme VARCHAR(10) DEFAULT 'light'")
+            conn.commit()
+        except Exception:
+            pass
     app.run(debug=True, host='0.0.0.0', port=5000)

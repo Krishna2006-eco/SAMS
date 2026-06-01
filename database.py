@@ -22,6 +22,7 @@ def init_db():
             role TEXT NOT NULL CHECK(role IN ('teacher', 'student', 'admin')),
             full_name TEXT NOT NULL,
             status TEXT NOT NULL CHECK(status IN ('pending', 'active', 'blocked')) DEFAULT 'pending',
+            theme TEXT NOT NULL DEFAULT 'light',
             department TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
@@ -34,6 +35,11 @@ def init_db():
     if 'status' not in existing_columns:
         try:
             cursor.execute("ALTER TABLE users ADD COLUMN status VARCHAR(20) DEFAULT 'pending'")
+        except sqlite3.OperationalError:
+            pass
+    if 'theme' not in existing_columns:
+        try:
+            cursor.execute("ALTER TABLE users ADD COLUMN theme VARCHAR(10) DEFAULT 'light'")
         except sqlite3.OperationalError:
             pass
 
@@ -50,14 +56,15 @@ def init_db():
                 role TEXT NOT NULL CHECK(role IN ('teacher', 'student', 'admin')),
                 full_name TEXT NOT NULL,
                 status TEXT NOT NULL CHECK(status IN ('pending', 'active', 'blocked')) DEFAULT 'pending',
+                theme TEXT NOT NULL DEFAULT 'light',
                 department TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
         cursor.execute('''
-            INSERT INTO users_new (id, username, password, role, full_name, status, department, created_at)
+            INSERT INTO users_new (id, username, password, role, full_name, status, theme, department, created_at)
             SELECT id, username, password, role, full_name,
-                   COALESCE(status, 'pending'), department, created_at
+                   COALESCE(status, 'pending'), COALESCE(theme, 'light'), department, created_at
             FROM users
         ''')
         cursor.execute('DROP TABLE users')
@@ -67,6 +74,7 @@ def init_db():
 
     # Ensure existing users are not locked out after migration.
     cursor.execute("UPDATE users SET status = 'active' WHERE status IS NULL AND role IN ('teacher', 'student', 'admin')")
+    cursor.execute("UPDATE users SET theme = 'light' WHERE theme IS NULL")
     
     # Subjects table
     cursor.execute('''
