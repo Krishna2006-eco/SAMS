@@ -94,7 +94,7 @@
 </div>
 
 <!-- Marks Trend Graph -->
-{% if trend_labels and marks_trend %}
+{% if not selected_exam and trend_labels and marks_trend %}
 <div class="card">
     <h3>📈 Marks Trend</h3>
     <canvas id="marksTrendChart" width="600" height="300"></canvas>

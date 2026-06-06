@@ -43,6 +43,16 @@
     {% endif %}
 </div>
 
+<!-- Class Average Trend -->
+<div class="card">
+    <h3>📈 Class Average Trend</h3>
+    {% if class_trend %}
+        <canvas id="classAverageTrendChart" style="max-height: 380px;"></canvas>
+    {% else %}
+        <p class="empty-state">No exam data available to display trends.</p>
+    {% endif %}
+</div>
+
 <!-- Recent Student Activity -->
 <div class="card">
     <h3>📖 Recent Student Study Activity</h3>
@@ -73,4 +83,78 @@
         <p class="empty-state">No study activity recorded yet.</p>
     {% endif %}
 </div>
+
+{% if class_trend %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const classTrendData = {{ class_trend | tojson | safe }};
+    const examLabels = classTrendData.map(item => item.exam_name);
+    const averagePercentages = classTrendData.map(item => item.average);
+
+    const ctx = document.getElementById('classAverageTrendChart');
+    if (ctx && examLabels.length) {
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: examLabels,
+                datasets: [{
+                    label: 'Class Average (%)',
+                    data: averagePercentages,
+                    borderColor: 'rgba(79, 70, 229, 1)',
+                    backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 6,
+                    pointBackgroundColor: 'rgba(79, 70, 229, 1)',
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 2,
+                    pointHoverRadius: 8,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                            callback: value => value + '%'
+                        },
+                        title: {
+                            display: true,
+                            text: 'Average Percentage'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        labels: {
+                            padding: 15,
+                            font: {
+                                size: 12
+                            }
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        padding: 12,
+                        titleFont: {
+                            size: 13
+                        },
+                        bodyFont: {
+                            size: 12
+                        },
+                        callbacks: {
+                            label: context => `Average: ${context.parsed.y}%`
+                        }
+                    }
+                }
+            }
+        });
+    }
+</script>
+{% endif %}
 {% endblock %}

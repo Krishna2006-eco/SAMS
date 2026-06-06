@@ -735,11 +735,35 @@ def teacher_dashboard():
         LIMIT 20
     ''').fetchall()
     
+    # Get class average trend across exams
+    exam_averages = conn.execute('''
+        SELECT exam_name,
+               ROUND(AVG(marks_obtained / max_marks * 100), 1) as average_percentage,
+               COUNT(DISTINCT student_id) as student_count
+        FROM marks
+        GROUP BY exam_name
+        ORDER BY CASE exam_name 
+                 WHEN 'Class Test 01' THEN 1 
+                 WHEN 'Class Test 02' THEN 2 
+                 WHEN 'Internal Examination' THEN 3 
+                 WHEN 'End Semester Examination' THEN 4 
+                 ELSE 5 
+             END
+    ''').fetchall()
+    
+    class_trend = []
+    for row in exam_averages:
+        class_trend.append({
+            'exam_name': row['exam_name'],
+            'average': row['average_percentage']
+        })
+    
     conn.close()
     
     return render_template('teacher_dashboard.html',
                          students=students,
-                         recent_logs=recent_logs)
+                         recent_logs=recent_logs,
+                         class_trend=class_trend)
 
 
 
