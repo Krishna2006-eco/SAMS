@@ -6,6 +6,7 @@
 <div class="form-container">
     <h2>Edit Marks for {{ mark.student_name }}</h2>
     <form method="POST" action="{{ url_for('edit_mark', mark_id=mark.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="form-group">
             <label>Student</label>
             <input type="text" value="{{ mark.student_name }}" disabled>

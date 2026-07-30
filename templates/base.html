@@ -17,11 +17,15 @@
         <div class="nav-links">
             {% if current_user.is_authenticated %}
                 <form action="{{ url_for('toggle_theme') }}" method="POST" style="display:inline;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                   <button type="submit" class="theme-toggle">
                     {% if current_user.theme == 'dark' %}☀️ Light{% else %}🌙 Dark{% endif %}
                   </button>
                 </form>
                 <span class="welcome-text">Hello, {{ session.get('full_name') }}</span>
+                <a href="{{ url_for('notifications') }}" class="nav-bell" title="Notifications">
+                    🔔{% if unread_count and unread_count > 0 %}<span class="bell-badge">{{ unread_count }}</span>{% endif %}
+                </a>
                 {% if session.get('role') == 'teacher' %}
                     <a href="{{ url_for('teacher_dashboard') }}">Dashboard</a>
                     <a href="{{ url_for('enter_marks') }}">Enter Marks</a>
@@ -30,6 +34,8 @@
                     <a href="{{ url_for('student_dashboard') }}">Dashboard</a>
                     <a href="{{ url_for('add_study_log') }}">Log Study</a>
                     <a href="{{ url_for('view_results') }}">My Results</a>
+                    <a href="{{ url_for('student_calendar') }}">Calendar</a>
+                    <a href="{{ url_for('leaderboard') }}">Leaderboard</a>
                 {% elif session.get('role') == 'admin' %}
                     <a href="{{ url_for('admin_dashboard') }}">Admin Panel</a>
                 {% endif %}

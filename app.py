@@ -1,10 +1,19 @@
+import os
+import secrets
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from datetime import datetime, date, timedelta
 from database import get_db_connection, init_db
 from functools import wraps
+from werkzeug.security import generate_password_hash, check_password_hash
+from flask_wtf import CSRFProtect
 
 app = Flask(__name__)
-app.secret_key = 'your-secret-key-change-this-in-production'
+# Secret key comes from the environment. If not set, a random one is generated
+# each start (safe, but it logs everyone out on restart - so set SECRET_KEY in production).
+app.secret_key = os.environ.get('SECRET_KEY') or secrets.token_hex(32)
+
+# Protects every POST form against CSRF attacks
+csrf = CSRFProtect(app)
 
 # Initialize the database when the app starts
 init_db()
@@ -85,6 +94,65 @@ def calculate_grade(percentage):
     else:
         return 'F'
 
+
+def notify(conn, user_id, message, link=None):
+    """Create an in-app notification for a user."""
+    conn.execute(
+        'INSERT INTO notifications (user_id, message, link) VALUES (?, ?, ?)',
+        (user_id, message, link)
+    )
+
+
+def compute_streak(conn, student_id):
+    """Count consecutive study days ending today for a student."""
+    rows = conn.execute('''
+        SELECT DISTINCT study_date FROM study_logs
+        WHERE student_id = ? ORDER BY study_date DESC
+    ''', (student_id,)).fetchall()
+    streak = 0
+    if rows:
+        study_dates = [datetime.fromisoformat(r['study_date']).date() for r in rows]
+        today = date.today()
+        if study_dates[0] == today:
+            streak = 1
+            for next_date in study_dates[1:]:
+                if next_date == today - timedelta(days=streak):
+                    streak += 1
+                else:
+                    break
+    return streak
+
+
+def streak_badge(streak):
+    """Return a fun badge for a streak length."""
+    if streak >= 30:
+        return ('🏆', 'Legend')
+    elif streak >= 14:
+        return ('🔥', 'On Fire')
+    elif streak >= 7:
+        return ('⚡', 'Consistent')
+    elif streak >= 3:
+        return ('🌱', 'Building')
+    return ('', '')
+
+
+@app.context_processor
+def inject_unread_notifications():
+    """Make the unread notification count available in the navbar on every page."""
+    count = 0
+    if 'user_id' in session:
+        try:
+            conn = get_db_connection()
+            row = conn.execute(
+                'SELECT COUNT(*) AS c FROM notifications WHERE user_id = ? AND is_read = 0',
+                (session['user_id'],)
+            ).fetchone()
+            conn.close()
+            count = row['c'] if row else 0
+        except Exception:
+            count = 0
+    return {'unread_count': count}
+
 # ----- Routes -----
 
 @app.route('/')
@@ -105,6 +173,10 @@ def register():
             flash('Invalid role selected.', 'error')
             return redirect(url_for('register'))
 
+        if len(password) < 8:
+            flash('Password must be at least 8 characters long.', 'error')
+            return redirect(url_for('register'))
+
         conn = get_db_connection()
         
         # Check if username already exists
@@ -117,10 +189,11 @@ def register():
             conn.close()
             return redirect(url_for('register'))
         
-        # Insert new user with pending approval and default theme
+        # Insert new user with pending approval and default theme.
+        # The password is HASHED - we never store the real password.
         conn.execute(
             'INSERT INTO users (username, password, role, full_name, status, theme) VALUES (?, ?, ?, ?, ?, ?)',
-            (username, password, role, full_name, 'pending', 'light')
+            (username, generate_password_hash(password), role, full_name, 'pending', 'light')
         )
         conn.commit()
         conn.close()
@@ -139,12 +212,28 @@ def login():
         
         conn = get_db_connection()
         user = conn.execute(
-            'SELECT * FROM users WHERE username = ? AND password = ?',
-            (username, password)
+            'SELECT * FROM users WHERE username = ?', (username,)
         ).fetchone()
-        conn.close()
-        
+
+        password_ok = False
         if user:
+            stored = user['password']
+            if stored.startswith(('pbkdf2:', 'scrypt:')):
+                # Normal case: stored password is a secure hash
+                password_ok = check_password_hash(stored, password)
+            else:
+                # Old account created before hashing existed.
+                # If the plain password matches, upgrade it to a hash automatically.
+                if stored == password:
+                    password_ok = True
+                    conn.execute(
+                        'UPDATE users SET password = ? WHERE id = ?',
+                        (generate_password_hash(password), user['id'])
+                    )
+                    conn.commit()
+        conn.close()
+
+        if user and password_ok:
             if user['status'] == 'pending':
                 flash('Your account is awaiting admin approval.', 'error')
                 return redirect(url_for('login'))
@@ -298,9 +387,13 @@ def admin_edit_user(user_id):
 
         try:
             if password:
+                if len(password) < 8:
+                    flash('Password must be at least 8 characters long.', 'error')
+                    conn.close()
+                    return render_template('edit_user.html', user=user)
                 conn.execute(
                     'UPDATE users SET username = ?, full_name = ?, password = ? WHERE id = ?',
-                    (username, full_name, password, user_id)
+                    (username, full_name, generate_password_hash(password), user_id)
                 )
                 flash(f"User updated successfully. Password changed.", 'success')
             else:
@@ -870,6 +963,8 @@ def enter_marks():
         
         if student_ids and subject_id and exam_name:
             try:
+                subject_row = conn.execute('SELECT name FROM subjects WHERE id = ?', (subject_id,)).fetchone()
+                subject_name = subject_row['name'] if subject_row else 'a subject'
                 for i, student_id in enumerate(student_ids):
                     marks_obtained = marks_obtained_list[i]
                     max_marks = max_marks_list[i] if max_marks_list[i] else '100'
@@ -880,6 +975,9 @@ def enter_marks():
                             INSERT INTO marks (student_id, subject_id, marks_obtained, max_marks, exam_name, entered_by)
                             VALUES (?, ?, ?, ?, ?, ?)
                         ''', (student_id, subject_id, float(marks_obtained), float(max_marks), exam_name, session['user_id']))
+                        notify(conn, student_id,
+                               f"📊 Marks posted for {subject_name} — {exam_name}",
+                               '/student/results')
                 
                 conn.commit()
                 flash('Marks entered successfully for all students!', 'success')
@@ -913,6 +1011,9 @@ def assign_task():
             INSERT INTO tasks (student_id, teacher_id, title, description, due_date)
             VALUES (?, ?, ?, ?, ?)
         ''', (student_id, session['user_id'], title, description, due_date or None))
+        notify(conn, student_id,
+               f"📋 New task from {session['full_name']}: {title}",
+               '/student/dashboard')
         conn.commit()
         conn.close()
         
@@ -1105,6 +1206,240 @@ def student_progress(student_id):
                          tasks=tasks,
                          show_full_progress=True)
 
+# ----- Notifications -----
+
+@app.route('/notifications')
+@login_required
+def notifications():
+    """List the user's notifications and mark them as read."""
+    conn = get_db_connection()
+    notes = conn.execute('''
+        SELECT * FROM notifications WHERE user_id = ?
+        ORDER BY created_at DESC LIMIT 50
+    ''', (session['user_id'],)).fetchall()
+    conn.execute('UPDATE notifications SET is_read = 1 WHERE user_id = ?', (session['user_id'],))
+    conn.commit()
+    conn.close()
+    return render_template('notifications.html', notes=notes)
+
+
+# ----- Calendar -----
+
+@app.route('/student/calendar')
+@login_required
+@student_required
+def student_calendar():
+    """Month calendar showing task due dates."""
+    import calendar as cal
+
+    today = date.today()
+    try:
+        year = int(request.args.get('year', today.year))
+        month = int(request.args.get('month', today.month))
+        if month < 1 or month > 12:
+            raise ValueError
+    except (ValueError, TypeError):
+        year, month = today.year, today.month
+
+    conn = get_db_connection()
+    tasks = conn.execute('''
+        SELECT t.*, u.full_name AS teacher_name
+        FROM tasks t JOIN users u ON t.teacher_id = u.id
+        WHERE t.student_id = ? AND t.due_date IS NOT NULL
+    ''', (session['user_id'],)).fetchall()
+    conn.close()
+
+    # Group tasks by due date string YYYY-MM-DD
+    tasks_by_day = {}
+    for t in tasks:
+        tasks_by_day.setdefault(t['due_date'], []).append(t)
+
+    month_grid = cal.Calendar(firstweekday=0).monthdayscalendar(year, month)  # weeks of day numbers, 0 = padding
+    weeks = []
+    for week in month_grid:
+        row = []
+        for day in week:
+            if day == 0:
+                row.append(None)
+            else:
+                key = f"{year:04d}-{month:02d}-{day:02d}"
+                row.append({
+                    'day': day,
+                    'is_today': (year == today.year and month == today.month and day == today.day),
+                    'tasks': tasks_by_day.get(key, [])
+                })
+        weeks.append(row)
+
+    prev_year, prev_month = (year - 1, 12) if month == 1 else (year, month - 1)
+    next_year, next_month = (year + 1, 1) if month == 12 else (year, month + 1)
+
+    return render_template('calendar.html',
+                           weeks=weeks,
+                           month_name=cal.month_name[month],
+                           year=year,
+                           prev_year=prev_year, prev_month=prev_month,
+                           next_year=next_year, next_month=next_month)
+
+
+# ----- Leaderboard -----
+
+@app.route('/student/leaderboard')
+@login_required
+@student_required
+def leaderboard():
+    """Study streak and hours leaderboard for all active students."""
+    conn = get_db_connection()
+    students = conn.execute('''
+        SELECT id, full_name FROM users
+        WHERE role = 'student' AND status = 'active'
+    ''').fetchall()
+
+    thirty_days_ago = (date.today() - timedelta(days=30)).isoformat()
+    board = []
+    for s in students:
+        streak = compute_streak(conn, s['id'])
+        hours_row = conn.execute('''
+            SELECT COALESCE(SUM(hours_spent), 0) AS h FROM study_logs
+            WHERE student_id = ? AND study_date >= ?
+        ''', (s['id'], thirty_days_ago)).fetchone()
+        icon, label = streak_badge(streak)
+        board.append({
+            'id': s['id'],
+            'name': s['full_name'],
+            'streak': streak,
+            'hours': round(hours_row['h'], 1),
+            'badge_icon': icon,
+            'badge_label': label,
+            'is_me': s['id'] == session['user_id']
+        })
+    conn.close()
+
+    board.sort(key=lambda x: (-x['streak'], -x['hours']))
+    my_entry = next((b for b in board if b['is_me']), None)
+    my_rank = board.index(my_entry) + 1 if my_entry else None
+
+    return render_template('leaderboard.html', board=board, my_rank=my_rank, my_entry=my_entry)
+
+
+# ----- PDF Report Cards -----
+
+def build_report_card_pdf(conn, student):
+    """Generate a PDF report card for a student. Returns the PDF as bytes."""
+    from io import BytesIO
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib import colors
+    from reportlab.lib.units import cm
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+
+    marks = conn.execute('''
+        SELECT m.*, s.name AS subject_name
+        FROM marks m JOIN subjects s ON m.subject_id = s.id
+        WHERE m.student_id = ?
+        ORDER BY m.exam_name, s.name
+    ''', (student['id'],)).fetchall()
+
+    buf = BytesIO()
+    doc = SimpleDocTemplate(buf, pagesize=A4,
+                            topMargin=1.5 * cm, bottomMargin=1.5 * cm,
+                            leftMargin=1.8 * cm, rightMargin=1.8 * cm)
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle('T', parent=styles['Title'], textColor=colors.HexColor('#4f46e5'))
+    elements = []
+
+    elements.append(Paragraph('Student Academic Management System', title_style))
+    elements.append(Paragraph('Official Report Card', styles['Heading2']))
+    elements.append(Spacer(1, 8))
+    elements.append(Paragraph(f"<b>Student:</b> {student['full_name']}", styles['Normal']))
+    elements.append(Paragraph(f"<b>Username:</b> {student['username']}", styles['Normal']))
+    elements.append(Paragraph(f"<b>Generated:</b> {date.today().strftime('%d %B %Y')}", styles['Normal']))
+    elements.append(Spacer(1, 14))
+
+    if not marks:
+        elements.append(Paragraph('No marks have been entered yet.', styles['Normal']))
+    else:
+        # Group marks by exam
+        exams = {}
+        for m in marks:
+            exams.setdefault(m['exam_name'], []).append(m)
+
+        for exam_name, exam_marks in exams.items():
+            elements.append(Paragraph(exam_name, styles['Heading3']))
+            data = [['Subject', 'Marks', 'Out of', 'Percentage', 'Grade']]
+            total_o, total_m = 0, 0
+            for m in exam_marks:
+                pct = (m['marks_obtained'] / m['max_marks'] * 100) if m['max_marks'] else 0
+                total_o += m['marks_obtained']
+                total_m += m['max_marks']
+                data.append([m['subject_name'],
+                             f"{m['marks_obtained']:g}",
+                             f"{m['max_marks']:g}",
+                             f"{pct:.1f}%",
+                             calculate_grade(pct)])
+            overall_pct = (total_o / total_m * 100) if total_m else 0
+            data.append(['TOTAL', f"{total_o:g}", f"{total_m:g}",
+                         f"{overall_pct:.1f}%", calculate_grade(overall_pct)])
+
+            table = Table(data, colWidths=[6.5 * cm, 2.5 * cm, 2.5 * cm, 3 * cm, 2 * cm])
+            table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#4f46e5')),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('BACKGROUND', (0, -1), (-1, -1), colors.HexColor('#eef2ff')),
+                ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
+                ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#c7c9d9')),
+                ('ALIGN', (1, 0), (-1, -1), 'CENTER'),
+                ('FONTSIZE', (0, 0), (-1, -1), 9),
+                ('TOPPADDING', (0, 0), (-1, -1), 5),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+            ]))
+            elements.append(table)
+            elements.append(Spacer(1, 14))
+
+    elements.append(Spacer(1, 20))
+    footer_style = ParagraphStyle('F', parent=styles['Normal'], textColor=colors.grey, fontSize=8)
+    elements.append(Paragraph('Generated by SAMS - Student Academic Management System', footer_style))
+
+    doc.build(elements)
+    return buf.getvalue()
+
+
+@app.route('/student/report-card')
+@login_required
+@student_required
+def student_report_card():
+    """Student downloads their own report card as PDF."""
+    from flask import Response
+    conn = get_db_connection()
+    student = conn.execute('SELECT * FROM users WHERE id = ?', (session['user_id'],)).fetchone()
+    pdf = build_report_card_pdf(conn, student)
+    conn.close()
+    filename = f"report_card_{student['username']}.pdf"
+    return Response(pdf, mimetype='application/pdf',
+                    headers={'Content-Disposition': f'attachment; filename={filename}'})
+
+
+@app.route('/teacher/report-card/<int:student_id>')
+@login_required
+@teacher_required
+def teacher_report_card(student_id):
+    """Teacher downloads a student's report card as PDF."""
+    from flask import Response
+    conn = get_db_connection()
+    student = conn.execute(
+        "SELECT * FROM users WHERE id = ? AND role = 'student'", (student_id,)
+    ).fetchone()
+    if not student:
+        conn.close()
+        flash('Student not found.', 'error')
+        return redirect(url_for('teacher_dashboard'))
+    pdf = build_report_card_pdf(conn, student)
+    conn.close()
+    filename = f"report_card_{student['username']}.pdf"
+    return Response(pdf, mimetype='application/pdf',
+                    headers={'Content-Disposition': f'attachment; filename={filename}'})
+
+
 # Run the app
 if __name__ == '__main__':
     with get_db_connection() as conn:
@@ -1113,4 +1448,7 @@ if __name__ == '__main__':
             conn.commit()
         except Exception:
             pass
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    # Debug mode is OFF unless you explicitly set FLASK_DEBUG=1 on your own laptop.
+    # Never enable debug on a real server - it exposes your code to attackers.
+    debug_mode = os.environ.get('FLASK_DEBUG') == '1'
+    app.run(debug=debug_mode, host='0.0.0.0', port=5000)

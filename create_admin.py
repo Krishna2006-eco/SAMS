@@ -1,5 +1,6 @@
 import sqlite3
 from database import get_db_connection, init_db
+from werkzeug.security import generate_password_hash
 
 
 def main():
@@ -29,7 +30,7 @@ def main():
 
     cursor.execute(
         'INSERT INTO users (username, password, role, full_name, status) VALUES (?, ?, ?, ?, ?)',
-        (username, password, 'admin', username, 'active')
+        (username, generate_password_hash(password), 'admin', username, 'active')
     )
     conn.commit()
     conn.close()

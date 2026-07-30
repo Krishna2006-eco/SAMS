@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Leaderboard - SAMS{% endblock %}
+{% block content %}
+<h1>🏅 Study Leaderboard</h1>
+
+{% if my_entry %}
+<div class="card leaderboard-me">
+    <p>
+        Your rank: <strong>#{{ my_rank }}</strong> of {{ board|length }} ·
+        Streak: <strong>{{ my_entry.streak }} day{{ 's' if my_entry.streak != 1 }}</strong>
+        {% if my_entry.badge_icon %} · {{ my_entry.badge_icon }} {{ my_entry.badge_label }}{% endif %}
+        · {{ my_entry.hours }}h in last 30 days
+    </p>
+    {% if my_entry.streak == 0 %}
+        <p class="text-muted">Log a study session today to start your streak! 🌱</p>
+    {% endif %}
+</div>
+{% endif %}
+
+<div class="card">
+    <table>
+        <thead>
+            <tr>
+                <th>Rank</th>
+                <th>Student</th>
+                <th>Streak</th>
+                <th>Badge</th>
+                <th>Hours (30 days)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in board %}
+            <tr class="{% if row.is_me %}leaderboard-highlight{% endif %}">
+                <td>
+                    {% if loop.index == 1 %}🥇{% elif loop.index == 2 %}🥈{% elif loop.index == 3 %}🥉{% else %}{{ loop.index }}{% endif %}
+                </td>
+                <td>{{ row.name }}{% if row.is_me %} <span class="text-muted">(you)</span>{% endif %}</td>
+                <td>{{ row.streak }} day{{ 's' if row.streak != 1 }}</td>
+                <td>{% if row.badge_icon %}{{ row.badge_icon }} {{ row.badge_label }}{% else %}—{% endif %}</td>
+                <td>{{ row.hours }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <p class="text-muted" style="margin-top: 0.75rem;">
+        Badges: 🌱 3+ days · ⚡ 7+ days · 🔥 14+ days · 🏆 30+ days
+    </p>
+</div>
+{% endblock %}

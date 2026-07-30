@@ -132,6 +132,19 @@ def init_db():
         )
     ''')
     
+    # Notifications - in-app alerts for users (new marks, new tasks, etc.)
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS notifications (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            message TEXT NOT NULL,
+            link TEXT,
+            is_read INTEGER DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id)
+        )
+    ''')
+
     # Insert default subjects if they don't exist
     default_subjects = ['Mathematics', 'Science', 'English', 'History', 'Geography']
     for subject in default_subjects:
