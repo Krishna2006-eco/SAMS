@@ -1,6 +1,8 @@
 import sqlite3
+from pathlib import Path
 
-DATABASE = 'study_tracker.db'
+BASE_DIR = Path(__file__).resolve().parent
+DATABASE = str(BASE_DIR / 'study_tracker.db')
 
 def get_db_connection():
     """Create a connection to the database."""

@@ -1,16 +1,39 @@
 import os
 import secrets
+import sys
+from pathlib import Path
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from datetime import datetime, date, timedelta
-from database import get_db_connection, init_db
 from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_wtf import CSRFProtect
+
+try:
+    from dotenv import load_dotenv
+except ImportError:
+    load_dotenv = None
+
+BASE_DIR = Path(__file__).resolve().parent
+if str(BASE_DIR) not in sys.path:
+    sys.path.insert(0, str(BASE_DIR))
+
+if load_dotenv:
+    load_dotenv(BASE_DIR / '.env')
+
+from database import get_db_connection, init_db
+from services.analytics_service import calculate_streak
+from repositories.student_repository import StudentRepository
+from services.alert_service import AlertService
+from api.routes import api
+from ai.routes import ai
 
 app = Flask(__name__)
 # Secret key comes from the environment. If not set, a random one is generated
 # each start (safe, but it logs everyone out on restart - so set SECRET_KEY in production).
 app.secret_key = os.environ.get('SECRET_KEY') or secrets.token_hex(32)
+app.config['DEBUG'] = os.environ.get('DEBUG', 'False').lower() in ('1', 'true', 'yes')
+app.register_blueprint(api)
+app.register_blueprint(ai)
 
 # Protects every POST form against CSRF attacks
 csrf = CSRFProtect(app)
@@ -440,66 +463,27 @@ def toggle_theme():
 @student_required
 def student_dashboard():
     """Student's main dashboard."""
-    conn = get_db_connection()
-    
-    # Get recent study logs
-    study_logs = conn.execute('''
-        SELECT sl.*, s.name as subject_name
-        FROM study_logs sl
-        JOIN subjects s ON sl.subject_id = s.id
-        WHERE sl.student_id = ?
-        ORDER BY sl.study_date DESC
-        LIMIT 10
-    ''', (session['user_id'],)).fetchall()
-    
-    # Get total hours studied per subject
-    study_summary = conn.execute('''
-        SELECT s.name as subject_name, SUM(sl.hours_spent) as total_hours
-        FROM study_logs sl
-        JOIN subjects s ON sl.subject_id = s.id
-        WHERE sl.student_id = ?
-        GROUP BY s.id
-        ORDER BY total_hours DESC
-    ''', (session['user_id'],)).fetchall()
-    
-    # Get assigned tasks
-    tasks = conn.execute('''
-        SELECT t.*, u.full_name as teacher_name
-        FROM tasks t
-        JOIN users u ON t.teacher_id = u.id
-        WHERE t.student_id = ?
-        ORDER BY t.is_completed ASC, t.due_date ASC
-    ''', (session['user_id'],)).fetchall()
-    
-    # Calculate study streak (consecutive days ending today)
-    streak_rows = conn.execute('''
-        SELECT DISTINCT study_date
-        FROM study_logs
-        WHERE student_id = ?
-        ORDER BY study_date DESC
-    ''', (session['user_id'],)).fetchall()
+    repo = StudentRepository()
+    data = repo.get_student_dashboard_data(session['user_id'])
+    repo.close()
 
-    streak = 0
-    if streak_rows:
-        study_dates = [datetime.fromisoformat(row['study_date']).date() for row in streak_rows]
-        today = date.today()
+    study_dates = [datetime.fromisoformat(row['study_date']).date() for row in data['streak_rows']]
+    streak = calculate_streak(study_dates)
 
-        if study_dates[0] == today:
-            streak = 1
-            for next_date in study_dates[1:]:
-                expected_date = today - timedelta(days=streak)
-                if next_date == expected_date:
-                    streak += 1
-                else:
-                    break
-
-    conn.close()
+    weekly_hours = data.get('weekly_hours', 0)
+    completion_rate = 0
+    if data.get('total_tasks', 0):
+        completion_rate = round((data.get('completed_tasks', 0) / data['total_tasks']) * 100, 1)
 
     return render_template('student_dashboard.html',
-                         study_logs=study_logs,
-                         study_summary=study_summary,
-                         tasks=tasks,
-                         streak=streak)
+                         study_logs=data['study_logs'],
+                         study_summary=data['study_summary'],
+                         tasks=data['tasks'],
+                         streak=streak,
+                         weekly_hours=weekly_hours,
+                         completion_rate=completion_rate,
+                         completed_tasks=data.get('completed_tasks', 0),
+                         total_tasks=data.get('total_tasks', 0))
 
 @app.route('/student/add-study-log', methods=['GET', 'POST'])
 @login_required
@@ -527,6 +511,13 @@ def add_study_log():
     
     conn.close()
     return render_template('add_study_log.html', subjects=subjects)
+
+@app.route('/admin/alerts')
+@login_required
+@admin_required
+def admin_alerts():
+    alerts = AlertService.generate_warnings_for_students()
+    return render_template('admin_alerts.html', alerts=alerts)
 
 @app.route('/student/results')
 @login_required

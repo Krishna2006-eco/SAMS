@@ -3,111 +3,153 @@
 {% block title %}Student Dashboard - Study Tracker{% endblock %}
 
 {% block content %}
-<h1>Welcome, {{ session.get('full_name') }}</h1>
-
-<div class="dashboard-grid">
-    <!-- Study Streak Card -->
-    <div class="card streak-card">
-        <h3>🔥 Study Streak</h3>
-        <div class="streak-number">{{ streak }}</div>
-        <p>consecutive days</p>
-    </div>
-    
-    <!-- Quick Actions -->
-    <div class="card">
-        <h3>Quick Actions</h3>
-        <div class="quick-actions">
-            <a href="{{ url_for('add_study_log') }}" class="btn btn-primary">+ Log Study Session</a>
-            <a href="{{ url_for('view_results') }}" class="btn btn-secondary">View Results</a>
+<div class="dashboard-shell">
+    <section class="hero-card">
+        <div>
+            <p class="eyebrow">Student Workspace</p>
+            <h1>Welcome back, {{ session.get('full_name') }}</h1>
+            <p>Track classes, stay ahead of deadlines, and monitor your learning momentum in one place.</p>
         </div>
-    </div>
-</div>
+        <div class="hero-metrics">
+            <div class="metric-pill">🔥 Streak: {{ streak }} days</div>
+            <div class="metric-pill">📚 Focused study</div>
+        </div>
+    </section>
 
-<!-- Study Summary -->
-<div class="card">
-    <h3>📊 Study Hours by Subject</h3>
-    {% if study_summary %}
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>Subject</th>
-                    <th>Total Hours</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for item in study_summary %}
-                <tr>
-                    <td>{{ item.subject_name }}</td>
-                    <td>{{ "%.1f"|format(item.total_hours) }} hrs</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    {% else %}
-        <p class="empty-state">No study sessions logged yet. Start tracking your progress!</p>
-    {% endif %}
-</div>
+    <section class="widget-grid">
+        <div class="widget-card accent-card">
+            <h3>Quick Actions</h3>
+            <div class="quick-actions">
+                <a href="{{ url_for('add_study_log') }}" class="btn btn-primary">+ Log Study</a>
+                <a href="{{ url_for('view_results') }}" class="btn btn-secondary">View Results</a>
+                <a href="{{ url_for('student_calendar') }}" class="btn btn-secondary">Open Calendar</a>
+            </div>
+        </div>
 
-<!-- Assigned Tasks -->
-<div class="card">
-    <h3>📋 Assigned Tasks</h3>
-    {% if tasks %}
-        <ul class="task-list">
-            {% for task in tasks %}
-            <li class="task-item {% if task.is_completed %}completed{% endif %}">
-                <div class="task-info">
-                    <strong>{{ task.title }}</strong>
-                    {% if task.description %}
-                        <p>{{ task.description }}</p>
-                    {% endif %}
-                    <small>Assigned by: {{ task.teacher_name }}
-                        {% if task.due_date %} | Due: {{ task.due_date }}{% endif %}
-                    </small>
+        <div class="widget-card analytics-card">
+            <h3>📈 Weekly Snapshot</h3>
+            <div class="analytics-row">
+                <div class="analytics-pill">
+                    <span class="analytics-label">Study hours</span>
+                    <strong>{{ weekly_hours }} hrs</strong>
                 </div>
-                <form method="POST" action="{{ url_for('toggle_task', task_id=task.id) }}" style="display: inline;">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button type="submit" class="btn btn-small">
-                        {% if task.is_completed %}Mark Pending{% else %}Mark Done{% endif %}
-                    </button>
-                </form>
-            </li>
-            {% endfor %}
-        </ul>
-    {% else %}
-        <p class="empty-state">No tasks assigned yet.</p>
-    {% endif %}
+                <div class="analytics-pill">
+                    <span class="analytics-label">Task progress</span>
+                    <strong>{{ completion_rate }}%</strong>
+                </div>
+            </div>
+            <p class="analytics-footnote">{{ completed_tasks }} of {{ total_tasks }} tasks completed</p>
+        </div>
+
+        <div class="widget-card">
+            <h3>Study Summary</h3>
+            {% if study_summary %}
+                <ul class="summary-list">
+                    {% for item in study_summary %}
+                    <li>
+                        <span>{{ item.subject_name }}</span>
+                        <strong>{{ "%.1f"|format(item.total_hours) }} hrs</strong>
+                    </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="empty-state">No study sessions logged yet.</p>
+            {% endif %}
+        </div>
+    </section>
+
+    <section class="widget-grid two-col">
+        <div class="widget-card assistant-card">
+            <h3>🤖 Study Assistant</h3>
+            <p class="assistant-help">Ask for quick help with attendance, CGPA planning, or study strategy.</p>
+            <form id="ai-assistant-form" class="assistant-form">
+                <input type="text" id="ai-query" name="query" placeholder="Try: improve my attendance" required>
+                <button type="submit" class="btn btn-primary">Ask</button>
+            </form>
+            <div id="ai-result" class="assistant-result">Try asking about attendance, CGPA, or your next study plan.</div>
+        </div>
+
+        <div class="widget-card">
+            <h3>📋 Assigned Tasks</h3>
+            {% if tasks %}
+                <ul class="task-list">
+                    {% for task in tasks %}
+                    <li class="task-item {% if task.is_completed %}completed{% endif %}">
+                        <div class="task-info">
+                            <strong>{{ task.title }}</strong>
+                            {% if task.description %}<p>{{ task.description }}</p>{% endif %}
+                            <small>Assigned by: {{ task.teacher_name }}{% if task.due_date %} | Due: {{ task.due_date }}{% endif %}</small>
+                        </div>
+                        <form method="POST" action="{{ url_for('toggle_task', task_id=task.id) }}" style="display:inline;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-small">{% if task.is_completed %}Mark Pending{% else %}Mark Done{% endif %}</button>
+                        </form>
+                    </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="empty-state">No tasks assigned yet.</p>
+            {% endif %}
+        </div>
+
+        <div class="widget-card">
+            <h3>📝 Recent Study Sessions</h3>
+            {% if study_logs %}
+                <div class="table-card">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Subject</th>
+                                <th>Hours</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in study_logs %}
+                            <tr>
+                                <td>{{ log.study_date }}</td>
+                                <td>{{ log.subject_name }}</td>
+                                <td>{{ log.hours_spent }} hrs</td>
+                                <td><a href="{{ url_for('edit_study_log', log_id=log.id) }}" class="btn btn-small">Edit</a></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="empty-state">No study sessions logged yet.</p>
+            {% endif %}
+        </div>
+    </section>
 </div>
 
-<!-- Recent Study Logs -->
-<div class="card">
-    <h3>📝 Recent Study Sessions</h3>
-    {% if study_logs %}
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Subject</th>
-                    <th>Hours</th>
-                    <th>Notes</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for log in study_logs %}
-                <tr>
-                    <td>{{ log.study_date }}</td>
-                    <td>{{ log.subject_name }}</td>
-                    <td>{{ log.hours_spent }} hrs</td>
-                    <td>{{ log.notes or '-' }}</td>
-                    <td>
-                        <a href="{{ url_for('edit_study_log', log_id=log.id) }}" class="btn btn-small">Edit</a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    {% else %}
-        <p class="empty-state">No study sessions logged yet.</p>
-    {% endif %}
-</div>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const form = document.getElementById('ai-assistant-form');
+        const result = document.getElementById('ai-result');
+        if (!form || !result) return;
+
+        form.addEventListener('submit', async function (event) {
+            event.preventDefault();
+            const query = document.getElementById('ai-query').value.trim();
+            if (!query) return;
+
+            result.innerHTML = '<span class="assistant-loading">Thinking…</span>';
+            try {
+                const response = await fetch('{{ url_for("ai.assist") }}', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query: query })
+                });
+                const payload = await response.json();
+                const assistantData = payload?.data?.data || payload?.data || payload;
+                const message = assistantData?.message || 'The assistant is ready to help.';
+                result.innerHTML = `<strong>Response:</strong> ${message}`;
+            } catch (error) {
+                result.innerHTML = '<span class="assistant-error">The assistant is temporarily unavailable.</span>';
+            }
+        });
+    });
+</script>
 {% endblock %}
