@@ -1,0 +1,107 @@
+==============================================
+ SAMS UPGRADE - HOW TO APPLY
+ (takes about 10 minutes, no coding needed)
+==============================================
+
+NEW FEATURES IN THIS VERSION
+----------------------------
+1. 🔔 NOTIFICATIONS - Students get an in-app alert (bell icon in the
+   navbar with a red unread count) when a teacher assigns them a task
+   or posts their marks. Clicking the bell shows all notifications.
+2. 📅 CALENDAR - Students get a "Calendar" page showing a month view
+   with their task due dates. Completed tasks show green, pending purple.
+3. 📄 PDF REPORT CARDS - Students can download their full report card
+   as a professional PDF from the "My Results" page. Teachers can
+   download any student's report card from the student progress page.
+4. 🏅 LEADERBOARD - Students get a "Leaderboard" page ranking everyone
+   by study streak, with badges: 🌱 3+ days, ⚡ 7+ days, 🔥 14+ days,
+   🏆 30+ days. Shows your own rank at the top.
+
+(Security fixes from the previous update are also included:
+hashed passwords, CSRF protection, no hardcoded secret key,
+debug off by default.)
+
+
+
+STEP 1 - BACKUP (1 min)
+-----------------------
+Copy your current SAMS folder somewhere safe (e.g. rename a copy
+to SAMS_old). If anything goes wrong you can go back.
+
+
+STEP 2 - REPLACE THE FILES (2 min)
+----------------------------------
+From this fixed folder, copy these into your SAMS project folder,
+replacing the old ones:
+
+  - app.py
+  - create_admin.py
+  - requirements.txt
+  - .gitignore
+  - secure_existing_passwords.py   (new file)
+  - the whole templates/ folder
+
+DO NOT touch your study_tracker.db on your laptop - that has your real data.
+
+
+STEP 3 - INSTALL THE NEW PACKAGE (1 min)
+----------------------------------------
+Open a terminal/command prompt inside the SAMS folder and run:
+
+  pip install -r requirements.txt
+
+(This installs Flask-WTF, the CSRF protection package.)
+
+
+STEP 4 - SECURE THE EXISTING PASSWORDS (1 min)
+----------------------------------------------
+In the same terminal, run ONCE:
+
+  python secure_existing_passwords.py
+
+You will see "Secured password for: ..." for each user. Done.
+Everyone keeps their same password.
+
+
+STEP 5 - RUN THE APP
+--------------------
+  python app.py
+
+Then open http://localhost:5000 - everything works the same as before,
+just secure now.
+
+(If you want the developer debug pages while working on your own laptop,
+run it like this instead:
+  Windows:  set FLASK_DEBUG=1 && python app.py
+  Mac/Linux: FLASK_DEBUG=1 python app.py )
+
+
+STEP 6 - FIX GITHUB (IMPORTANT - 3 min)
+---------------------------------------
+Your database with everyone's passwords is still visible in the repo's
+history. The easiest safe fix:
+
+  Option A (easiest): Make the repo PRIVATE.
+    GitHub -> your repo -> Settings -> scroll to "Danger Zone"
+    -> "Change visibility" -> Private.
+
+  Option B (if you want it public): Delete the repo on GitHub entirely,
+    create a fresh new repo, and upload this FIXED folder
+    (the .gitignore will automatically keep the database out this time).
+
+ALSO DO:
+  - Change the admin password (admin2026 is public - change it via
+    the app or make a new admin).
+  - Tell your test users to change their password anywhere they
+    reused it (Gmail etc.), since the old ones were public.
+
+
+STEP 7 - FOR REAL DEPLOYMENT (later)
+------------------------------------
+When you host SAMS on a real server, set a permanent secret key so
+users don't get logged out on restart:
+
+  Set an environment variable SECRET_KEY to any long random text,
+  for example: SECRET_KEY=k9f2m8x1q7w3e5r6t9y2u4i8o0p3a5s7
+
+That's it. Message Claude if any step fails and paste the error.

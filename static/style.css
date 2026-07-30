@@ -631,3 +631,47 @@ footer p {
         grid-template-columns: 1fr;
     }
 }
+
+
+/* ===== Notifications bell ===== */
+.nav-bell { position: relative; font-size: 1.1rem; text-decoration: none; }
+.bell-badge {
+    position: absolute; top: -6px; right: -10px;
+    background: #ef4444; color: #fff; border-radius: 999px;
+    font-size: 0.65rem; font-weight: 700; padding: 1px 5px; line-height: 1.2;
+}
+.notification-item {
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 1rem; padding: 0.75rem 0.5rem; border-bottom: 1px solid var(--border);
+}
+.notification-item:last-child { border-bottom: none; }
+.notification-unread { background: var(--primary-light); border-radius: 6px; }
+.notification-link { color: var(--text); text-decoration: none; font-weight: 500; }
+.notification-link:hover { color: var(--primary); }
+.notification-time { color: var(--text-muted); font-size: 0.8rem; white-space: nowrap; }
+
+/* ===== Calendar ===== */
+.calendar-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1rem; }
+.calendar-nav { display: flex; align-items: center; gap: 0.75rem; }
+.calendar-month { font-weight: 700; font-size: 1.1rem; min-width: 10rem; text-align: center; }
+.calendar-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.calendar-table th { background: var(--table-header-bg); padding: 0.5rem; text-align: center; font-size: 0.85rem; }
+.calendar-day { border: 1px solid var(--border); vertical-align: top; height: 90px; padding: 4px; }
+.calendar-empty { background: var(--bg); }
+.calendar-daynum { font-weight: 600; font-size: 0.85rem; margin-bottom: 2px; }
+.calendar-today { outline: 2px solid var(--primary); outline-offset: -2px; }
+.calendar-today .calendar-daynum { color: var(--primary); }
+.calendar-task {
+    background: var(--primary); color: #fff; border-radius: 4px;
+    font-size: 0.7rem; padding: 2px 4px; margin: 2px 0;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.calendar-task-done { background: #16a34a; text-decoration: line-through; opacity: 0.75; }
+
+/* ===== Leaderboard ===== */
+.leaderboard-me { border-left: 4px solid var(--primary); }
+.leaderboard-highlight { background: var(--primary-light); font-weight: 600; }
+
+/* ===== Page header with action button ===== */
+.page-header-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1rem; }
+.page-header-row h1 { margin-bottom: 0; }

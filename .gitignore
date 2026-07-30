@@ -2,3 +2,5 @@ __pycache__/
 *.pyc
 study_tracker.db
 venv/
+*.db
+.env

@@ -205,6 +205,7 @@
         <h3>Step 2: Enter Marks for All Students</h3>
 
         <form method="POST" action="{{ url_for('enter_marks') }}" id="marksForm">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" id="formSubjectId" name="subject_id">
             <input type="hidden" id="formExamName" name="exam_name">
 

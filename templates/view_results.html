@@ -3,7 +3,10 @@
 {% block title %}My Results - Study Tracker{% endblock %}
 
 {% block content %}
-<h1>My Results</h1>
+<div class="page-header-row">
+    <h1>My Results</h1>
+    <a href="{{ url_for('student_report_card') }}" class="btn btn-primary">📄 Download Report Card (PDF)</a>
+</div>
 
 <!-- Overall Summary -->
 <div class="results-summary">

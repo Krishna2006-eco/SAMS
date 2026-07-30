@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Notifications - SAMS{% endblock %}
+{% block content %}
+<h1>🔔 Notifications</h1>
+
+{% if notes %}
+    <div class="card">
+        {% for n in notes %}
+            <div class="notification-item {% if not n.is_read %}notification-unread{% endif %}">
+                {% if n.link %}
+                    <a href="{{ n.link }}" class="notification-link">{{ n.message }}</a>
+                {% else %}
+                    <span>{{ n.message }}</span>
+                {% endif %}
+                <span class="notification-time">{{ n.created_at }}</span>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="card">
+        <p class="text-muted">No notifications yet. When a teacher posts marks or assigns you a task, it will appear here.</p>
+    </div>
+{% endif %}
+{% endblock %}

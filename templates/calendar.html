@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Calendar - SAMS{% endblock %}
+{% block content %}
+<div class="calendar-header">
+    <h1>📅 Task Calendar</h1>
+    <div class="calendar-nav">
+        <a class="btn btn-secondary" href="{{ url_for('student_calendar', year=prev_year, month=prev_month) }}">← Prev</a>
+        <span class="calendar-month">{{ month_name }} {{ year }}</span>
+        <a class="btn btn-secondary" href="{{ url_for('student_calendar', year=next_year, month=next_month) }}">Next →</a>
+    </div>
+</div>
+
+<div class="card">
+    <table class="calendar-table">
+        <thead>
+            <tr>
+                <th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th><th>Sun</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for week in weeks %}
+            <tr>
+                {% for cell in week %}
+                    {% if cell %}
+                        <td class="calendar-day {% if cell.is_today %}calendar-today{% endif %}">
+                            <div class="calendar-daynum">{{ cell.day }}</div>
+                            {% for t in cell.tasks %}
+                                <div class="calendar-task {% if t.is_completed %}calendar-task-done{% endif %}"
+                                     title="{{ t.title }} (from {{ t.teacher_name }})">
+                                    {{ t.title }}
+                                </div>
+                            {% endfor %}
+                        </td>
+                    {% else %}
+                        <td class="calendar-day calendar-empty"></td>
+                    {% endif %}
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <p class="text-muted" style="margin-top: 0.75rem;">
+        Tasks appear on their due date. <span class="calendar-task" style="display:inline-block;">Pending</span>
+        <span class="calendar-task calendar-task-done" style="display:inline-block;">Completed</span>
+    </p>
+</div>
+{% endblock %}

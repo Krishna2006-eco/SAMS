@@ -65,6 +65,7 @@
                     </small>
                 </div>
                 <form method="POST" action="{{ url_for('toggle_task', task_id=task.id) }}" style="display: inline;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn btn-small">
                         {% if task.is_completed %}Mark Pending{% else %}Mark Done{% endif %}
                     </button>
