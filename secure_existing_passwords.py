@@ -7,6 +7,13 @@ Run this ONCE on your laptop where your real study_tracker.db lives:
 It converts every user's plain-text password into a secure hash.
 Users keep the SAME password - they just can't be read by anyone anymore.
 """
+import sys
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent
+if str(BASE_DIR) not in sys.path:
+    sys.path.insert(0, str(BASE_DIR))
+
 from database import get_db_connection
 from werkzeug.security import generate_password_hash
 

@@ -1,4 +1,11 @@
 import sqlite3
+import sys
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent
+if str(BASE_DIR) not in sys.path:
+    sys.path.insert(0, str(BASE_DIR))
+
 from database import get_db_connection, init_db
 from werkzeug.security import generate_password_hash
 
