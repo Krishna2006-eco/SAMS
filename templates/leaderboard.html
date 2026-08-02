@@ -1,24 +1,40 @@
 {% extends "base.html" %}
 {% block title %}Leaderboard - SAMS{% endblock %}
 {% block content %}
-<h1>🏅 Study Leaderboard</h1>
+<div class="page-header-row">
+    <h1><span class="icon-chip icon-chip-lg tier-legend"><i class="fa-solid fa-medal"></i></span> Study Leaderboard</h1>
+</div>
 
 {% if my_entry %}
 <div class="card leaderboard-me">
-    <p>
-        Your rank: <strong>#{{ my_rank }}</strong> of {{ board|length }} ·
-        Streak: <strong>{{ my_entry.streak }} day{{ 's' if my_entry.streak != 1 }}</strong>
-        {% if my_entry.badge_icon %} · {{ my_entry.badge_icon }} {{ my_entry.badge_label }}{% endif %}
-        · {{ my_entry.hours }}h in last 30 days
-    </p>
+    <div class="me-stat-row">
+        <div class="me-stat">
+            <span class="me-stat-label">Your rank</span>
+            <span class="me-stat-value">#{{ my_rank }} <span class="me-stat-of">of {{ board|length }}</span></span>
+        </div>
+        <div class="me-stat">
+            <span class="me-stat-label">Streak</span>
+            <span class="me-stat-value">{{ my_entry.streak }} <span class="me-stat-of">day{{ 's' if my_entry.streak != 1 }}</span></span>
+        </div>
+        <div class="me-stat">
+            <span class="me-stat-label">Last 30 days</span>
+            <span class="me-stat-value">{{ my_entry.hours }}<span class="me-stat-of">h</span></span>
+        </div>
+        {% if my_entry.badge_icon %}
+        <div class="me-stat">
+            <span class="me-stat-label">Badge</span>
+            <span class="badge-pill {{ my_entry.badge_tier }}"><i class="{{ my_entry.badge_icon }}"></i> {{ my_entry.badge_label }}</span>
+        </div>
+        {% endif %}
+    </div>
     {% if my_entry.streak == 0 %}
-        <p class="text-muted">Log a study session today to start your streak! 🌱</p>
+        <p class="text-muted" style="margin-top: 0.9rem;"><i class="fa-solid fa-seedling"></i>&nbsp; Log a study session today to start your streak.</p>
     {% endif %}
 </div>
 {% endif %}
 
-<div class="card">
-    <table>
+<div class="card table-card">
+    <table class="data-table">
         <thead>
             <tr>
                 <th>Rank</th>
@@ -31,19 +47,25 @@
         <tbody>
             {% for row in board %}
             <tr class="{% if row.is_me %}leaderboard-highlight{% endif %}">
-                <td>
-                    {% if loop.index == 1 %}🥇{% elif loop.index == 2 %}🥈{% elif loop.index == 3 %}🥉{% else %}{{ loop.index }}{% endif %}
+                <td class="rank-cell">
+                    {% if loop.index == 1 %}<span class="icon-chip rank-gold"><i class="fa-solid fa-trophy"></i></span>
+                    {% elif loop.index == 2 %}<span class="icon-chip rank-silver"><i class="fa-solid fa-trophy"></i></span>
+                    {% elif loop.index == 3 %}<span class="icon-chip rank-bronze"><i class="fa-solid fa-trophy"></i></span>
+                    {% else %}<span class="rank-number">{{ loop.index }}</span>{% endif %}
                 </td>
                 <td>{{ row.name }}{% if row.is_me %} <span class="text-muted">(you)</span>{% endif %}</td>
                 <td>{{ row.streak }} day{{ 's' if row.streak != 1 }}</td>
-                <td>{% if row.badge_icon %}{{ row.badge_icon }} {{ row.badge_label }}{% else %}—{% endif %}</td>
+                <td>{% if row.badge_icon %}<span class="badge-pill {{ row.badge_tier }}"><i class="{{ row.badge_icon }}"></i> {{ row.badge_label }}</span>{% else %}<span class="text-muted">—</span>{% endif %}</td>
                 <td>{{ row.hours }}</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
-    <p class="text-muted" style="margin-top: 0.75rem;">
-        Badges: 🌱 3+ days · ⚡ 7+ days · 🔥 14+ days · 🏆 30+ days
+    <p class="text-muted legend-row">
+        <span class="badge-pill tier-building"><i class="fa-solid fa-seedling"></i> 3+ days</span>
+        <span class="badge-pill tier-consistent"><i class="fa-solid fa-bolt"></i> 7+ days</span>
+        <span class="badge-pill tier-fire"><i class="fa-solid fa-fire"></i> 14+ days</span>
+        <span class="badge-pill tier-legend"><i class="fa-solid fa-crown"></i> 30+ days</span>
     </p>
 </div>
 {% endblock %}

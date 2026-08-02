@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+{% block title %}New Message - SAMS{% endblock %}
+
+{% block content %}
+<h1><i class="fa-solid fa-pen"></i> New Message</h1>
+
+<div class="card">
+    {% if contacts %}
+        <table class="data-table">
+            <thead><tr><th>Name</th><th>Role</th><th></th></tr></thead>
+            <tbody>
+                {% for c in contacts %}
+                <tr>
+                    <td>{{ c.full_name }}</td>
+                    <td>{{ c.role|capitalize }}</td>
+                    <td><a href="{{ url_for('chat.dm_thread', other_id=c.id) }}" class="btn btn-small"><i class="fa-solid fa-comment"></i> Message</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p class="empty-state">No other users to message yet.</p>
+    {% endif %}
+</div>
+{% endblock %}

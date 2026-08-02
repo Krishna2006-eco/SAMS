@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+
+{% block title %}Create Classroom - SAMS{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <h2><i class="fa-solid fa-chalkboard-user"></i> Create Classroom</h2>
+    <form method="POST" action="{{ url_for('chat.classroom_new') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="form-group">
+            <label for="name">Classroom Name</label>
+            <input type="text" id="name" name="name" placeholder="e.g., Grade 10 Mathematics" required>
+        </div>
+        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-square-plus"></i> Create</button>
+        <a href="{{ url_for('chat.inbox') }}" class="btn btn-secondary"><i class="fa-solid fa-xmark"></i> Cancel</a>
+    </form>
+</div>
+{% endblock %}

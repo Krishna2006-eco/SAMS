@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ other.full_name }} - SAMS{% endblock %}
+
+{% block content %}
+<h1><i class="fa-solid fa-user"></i> {{ other.full_name }}</h1>
+
+<div class="card">
+    {% if messages %}
+        <div style="display:flex; flex-direction:column; gap:10px;">
+        {% for m in messages %}
+            {% set mine = m.sender_id == session.get('user_id') %}
+            <div style="align-self: {{ 'flex-end' if mine else 'flex-start' }}; max-width: 70%; background: {{ 'var(--primary-light)' if mine else 'var(--surface-alt)' }}; border-radius: var(--radius-md); padding: 10px 14px;">
+                {% if m.content %}<p style="margin:0;">{{ m.content }}</p>{% endif %}
+                {% if m.file_name %}
+                    <p style="margin: 4px 0 0;"><a href="{{ url_for('chat.download_dm_file', message_id=m.id) }}" class="btn btn-small"><i class="fa-solid fa-paperclip"></i> {{ m.file_name }}</a></p>
+                {% endif %}
+                <p class="text-muted" style="margin: 4px 0 0; font-size: 0.8em;">{{ m.created_at }}</p>
+            </div>
+        {% endfor %}
+        </div>
+    {% else %}
+        <p class="empty-state">No messages yet. Say hello!</p>
+    {% endif %}
+</div>
+
+<div class="card">
+    <form method="POST" action="{{ url_for('chat.dm_thread', other_id=other.id) }}" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="form-group">
+            <input type="text" name="content" placeholder="Type a message...">
+        </div>
+        <div class="form-group">
+            <label for="attachment"><i class="fa-solid fa-paperclip"></i> Attach a file (optional)</label>
+            <input type="file" id="attachment" name="attachment">
+        </div>
+        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-paper-plane"></i> Send</button>
+    </form>
+</div>
+{% endblock %}

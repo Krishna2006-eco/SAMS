@@ -1,0 +1,75 @@
+==============================================
+ SAMS - MESSAGING & CLASSROOMS UPGRADE
+ (takes about 5 minutes, no coding needed)
+==============================================
+
+NEW FEATURES IN THIS VERSION
+----------------------------
+1. 💬 DIRECT MESSAGES - Any user can message any other user 1-on-1,
+   with an optional file attached to any message. Click "Messages" in
+   the navbar, then "New Message" to pick who to write to.
+
+2. 🏫 CLASSROOMS - Teachers can create a classroom (like Google
+   Classroom). Each classroom gets a 6-character join code the
+   teacher shares with students. Inside a classroom:
+     - The teacher posts announcements/assignments, optionally with
+       a file attached (handout, worksheet, etc.)
+     - Students (and the teacher) can comment on any post, also with
+       an optional file attached
+     - The teacher can remove a student from the classroom
+   Students join with "Join Classroom" and the code.
+
+3. 🔔 Existing notifications now also fire for: new classroom posts,
+   new comments, new direct messages, and a student joining a class.
+   The navbar bell count includes unread messages too.
+
+Files only - no changes to your existing tasks/marks/study-log
+features. Nothing about your current data changes.
+
+
+STEP 1 - BACKUP (1 min)
+------------------------
+Copy your current SAMS folder somewhere safe first.
+
+
+STEP 2 - COPY THE NEW/CHANGED FILES (2 min)
+--------------------------------------------
+From this folder, copy these into your SAMS project folder,
+replacing the old ones where they already exist:
+
+  - app.py                     (updated: registers the new chat blueprint)
+  - database.py                (updated: adds the new tables)
+  - templates/base.html        (updated: adds a "Messages" nav link)
+  - chat/                      (NEW FOLDER - copy the whole thing)
+  - templates/chat/            (NEW FOLDER - copy the whole thing)
+
+DO NOT touch your study_tracker.db - your real data stays as is.
+The new tables get added to it automatically the next time you run
+the app (init_db() handles this, same as previous upgrades).
+
+
+STEP 3 - RUN THE APP
+---------------------
+  python app.py
+
+Then open http://localhost:5000, log in, and click "Messages" in
+the navbar.
+
+
+NOTES
+-----
+- Uploaded files (from chat and classroom posts) are stored in a new
+  folder called chat_uploads/ next to app.py. Add that folder to your
+  .gitignore so attachments never get committed to GitHub, the same
+  way study_tracker.db is already excluded.
+- Allowed attachment types: pdf, doc/docx, ppt/pptx, xls/xlsx, txt,
+  csv, images (png/jpg/gif), zip, mp3, mp4, odt, rtf. Max size 20 MB.
+  Executable/script files are blocked.
+- A file can only be downloaded by someone who's actually in that
+  classroom (or part of that DM conversation) - not just anyone with
+  the link.
+- Any user can start a direct message with any other active user
+  (teacher<->student, teacher<->teacher, etc.) - there's no
+  restriction based on which classroom they're in.
+
+Message Claude if any step fails and paste the error.

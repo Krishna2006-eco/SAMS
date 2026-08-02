@@ -26,14 +26,17 @@ from repositories.student_repository import StudentRepository
 from services.alert_service import AlertService
 from api.routes import api
 from ai.routes import ai
+from chat.routes import chat
 
 app = Flask(__name__)
 # Secret key comes from the environment. If not set, a random one is generated
 # each start (safe, but it logs everyone out on restart - so set SECRET_KEY in production).
 app.secret_key = os.environ.get('SECRET_KEY') or secrets.token_hex(32)
 app.config['DEBUG'] = os.environ.get('DEBUG', 'False').lower() in ('1', 'true', 'yes')
+app.config['MAX_CONTENT_LENGTH'] = 20 * 1024 * 1024  # 20 MB max upload (messages/classroom files)
 app.register_blueprint(api)
 app.register_blueprint(ai)
+app.register_blueprint(chat)
 
 # Protects every POST form against CSRF attacks
 csrf = CSRFProtect(app)
@@ -147,16 +150,16 @@ def compute_streak(conn, student_id):
 
 
 def streak_badge(streak):
-    """Return a fun badge for a streak length."""
+    """Return a premium icon badge (Font Awesome class + tier) for a streak length."""
     if streak >= 30:
-        return ('🏆', 'Legend')
+        return ('fa-solid fa-crown', 'tier-legend', 'Legend')
     elif streak >= 14:
-        return ('🔥', 'On Fire')
+        return ('fa-solid fa-fire', 'tier-fire', 'On Fire')
     elif streak >= 7:
-        return ('⚡', 'Consistent')
+        return ('fa-solid fa-bolt', 'tier-consistent', 'Consistent')
     elif streak >= 3:
-        return ('🌱', 'Building')
-    return ('', '')
+        return ('fa-solid fa-seedling', 'tier-building', 'Building')
+    return ('', '', '')
 
 
 @app.context_processor
@@ -170,8 +173,13 @@ def inject_unread_notifications():
                 'SELECT COUNT(*) AS c FROM notifications WHERE user_id = ? AND is_read = 0',
                 (session['user_id'],)
             ).fetchone()
+            dm_row = conn.execute('''
+                SELECT COUNT(*) AS c FROM direct_messages dm
+                JOIN conversations conv ON conv.id = dm.conversation_id
+                WHERE (conv.user_a = ? OR conv.user_b = ?) AND dm.sender_id != ? AND dm.is_read = 0
+            ''', (session['user_id'], session['user_id'], session['user_id'])).fetchone()
             conn.close()
-            count = row['c'] if row else 0
+            count = (row['c'] if row else 0) + (dm_row['c'] if dm_row else 0)
         except Exception:
             count = 0
     return {'unread_count': count}
@@ -1293,13 +1301,14 @@ def leaderboard():
             SELECT COALESCE(SUM(hours_spent), 0) AS h FROM study_logs
             WHERE student_id = ? AND study_date >= ?
         ''', (s['id'], thirty_days_ago)).fetchone()
-        icon, label = streak_badge(streak)
+        icon, tier, label = streak_badge(streak)
         board.append({
             'id': s['id'],
             'name': s['full_name'],
             'streak': streak,
             'hours': round(hours_row['h'], 1),
             'badge_icon': icon,
+            'badge_tier': tier,
             'badge_label': label,
             'is_me': s['id'] == session['user_id']
         })

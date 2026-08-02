@@ -11,8 +11,8 @@
             <p>Track classes, stay ahead of deadlines, and monitor your learning momentum in one place.</p>
         </div>
         <div class="hero-metrics">
-            <div class="metric-pill">🔥 Streak: {{ streak }} days</div>
-            <div class="metric-pill">📚 Focused study</div>
+            <div class="metric-pill"><i class="fa-solid fa-fire"></i> Streak: {{ streak }} days</div>
+            <div class="metric-pill"><i class="fa-solid fa-book"></i> Focused study</div>
         </div>
     </section>
 
@@ -20,14 +20,14 @@
         <div class="widget-card accent-card">
             <h3>Quick Actions</h3>
             <div class="quick-actions">
-                <a href="{{ url_for('add_study_log') }}" class="btn btn-primary">+ Log Study</a>
-                <a href="{{ url_for('view_results') }}" class="btn btn-secondary">View Results</a>
-                <a href="{{ url_for('student_calendar') }}" class="btn btn-secondary">Open Calendar</a>
+                <a href="{{ url_for('add_study_log') }}" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Log Study</a>
+                <a href="{{ url_for('view_results') }}" class="btn btn-secondary"><i class="fa-solid fa-chart-simple"></i> View Results</a>
+                <a href="{{ url_for('student_calendar') }}" class="btn btn-secondary"><i class="fa-solid fa-calendar-days"></i> Open Calendar</a>
             </div>
         </div>
 
         <div class="widget-card analytics-card">
-            <h3>📈 Weekly Snapshot</h3>
+            <h3><i class="fa-solid fa-chart-line"></i> Weekly Snapshot</h3>
             <div class="analytics-row">
                 <div class="analytics-pill">
                     <span class="analytics-label">Study hours</span>
@@ -60,17 +60,17 @@
 
     <section class="widget-grid two-col">
         <div class="widget-card assistant-card">
-            <h3>🤖 Study Assistant</h3>
+            <h3><i class="fa-solid fa-wand-magic-sparkles"></i> Study Assistant</h3>
             <p class="assistant-help">Ask for quick help with attendance, CGPA planning, or study strategy.</p>
             <form id="ai-assistant-form" class="assistant-form">
                 <input type="text" id="ai-query" name="query" placeholder="Try: improve my attendance" required>
-                <button type="submit" class="btn btn-primary">Ask</button>
+                <button type="submit" class="btn btn-primary"><i class="fa-solid fa-paper-plane"></i> Ask</button>
             </form>
             <div id="ai-result" class="assistant-result">Try asking about attendance, CGPA, or your next study plan.</div>
         </div>
 
         <div class="widget-card">
-            <h3>📋 Assigned Tasks</h3>
+            <h3><i class="fa-solid fa-list-check"></i> Assigned Tasks</h3>
             {% if tasks %}
                 <ul class="task-list">
                     {% for task in tasks %}
@@ -82,7 +82,7 @@
                         </div>
                         <form method="POST" action="{{ url_for('toggle_task', task_id=task.id) }}" style="display:inline;">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <button type="submit" class="btn btn-small">{% if task.is_completed %}Mark Pending{% else %}Mark Done{% endif %}</button>
+                            <button type="submit" class="btn btn-small">{% if task.is_completed %}<i class="fa-solid fa-rotate-left"></i> Mark Pending{% else %}<i class="fa-solid fa-circle-check"></i> Mark Done{% endif %}</button>
                         </form>
                     </li>
                     {% endfor %}
@@ -93,7 +93,7 @@
         </div>
 
         <div class="widget-card">
-            <h3>📝 Recent Study Sessions</h3>
+            <h3><i class="fa-solid fa-pen-to-square"></i> Recent Study Sessions</h3>
             {% if study_logs %}
                 <div class="table-card">
                     <table class="data-table">
@@ -111,7 +111,7 @@
                                 <td>{{ log.study_date }}</td>
                                 <td>{{ log.subject_name }}</td>
                                 <td>{{ log.hours_spent }} hrs</td>
-                                <td><a href="{{ url_for('edit_study_log', log_id=log.id) }}" class="btn btn-small">Edit</a></td>
+                                <td><a href="{{ url_for('edit_study_log', log_id=log.id) }}" class="btn btn-small"><i class="fa-solid fa-pen"></i> Edit</a></td>
                             </tr>
                             {% endfor %}
                         </tbody>

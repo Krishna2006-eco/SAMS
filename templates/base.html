@@ -4,28 +4,33 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}SAMS{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-      body.dark { background: #0f172a !important; }
+      body.dark { background: #10231e !important; }
     </style>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body class="{{ current_user.theme if current_user.is_authenticated else 'light' }}">
     <nav class="navbar">
         <div class="nav-brand">
-            <a href="{{ url_for('home') }}">📚 SAMS</a>
+            <a href="{{ url_for('home') }}"><i class="fa-solid fa-graduation-cap"></i> SAMS</a>
         </div>
         <div class="nav-links">
             {% if current_user.is_authenticated %}
                 <form action="{{ url_for('toggle_theme') }}" method="POST" style="display:inline;">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                   <button type="submit" class="theme-toggle">
-                    {% if current_user.theme == 'dark' %}☀️ Light{% else %}🌙 Dark{% endif %}
+                    {% if current_user.theme == 'dark' %}<i class="fa-solid fa-sun"></i> Light{% else %}<i class="fa-solid fa-moon"></i> Dark{% endif %}
                   </button>
                 </form>
                 <span class="welcome-text">Hello, {{ session.get('full_name') }}</span>
                 <a href="{{ url_for('notifications') }}" class="nav-bell" title="Notifications">
-                    🔔{% if unread_count and unread_count > 0 %}<span class="bell-badge">{{ unread_count }}</span>{% endif %}
+                    <i class="fa-solid fa-bell"></i>{% if unread_count and unread_count > 0 %}<span class="bell-badge">{{ unread_count }}</span>{% endif %}
                 </a>
+                <a href="{{ url_for('chat.inbox') }}"><i class="fa-solid fa-comments"></i> Messages</a>
                 {% if session.get('role') == 'teacher' %}
                     <a href="{{ url_for('teacher_dashboard') }}">Dashboard</a>
                     <a href="{{ url_for('enter_marks') }}">Enter Marks</a>

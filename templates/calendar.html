@@ -2,11 +2,11 @@
 {% block title %}Calendar - SAMS{% endblock %}
 {% block content %}
 <div class="calendar-header">
-    <h1>📅 Task Calendar</h1>
+    <h1><i class="fa-solid fa-calendar-days"></i> Task Calendar</h1>
     <div class="calendar-nav">
-        <a class="btn btn-secondary" href="{{ url_for('student_calendar', year=prev_year, month=prev_month) }}">← Prev</a>
+        <a class="btn btn-secondary" href="{{ url_for('student_calendar', year=prev_year, month=prev_month) }}"><i class="fa-solid fa-chevron-left"></i> Prev</a>
         <span class="calendar-month">{{ month_name }} {{ year }}</span>
-        <a class="btn btn-secondary" href="{{ url_for('student_calendar', year=next_year, month=next_month) }}">Next →</a>
+        <a class="btn btn-secondary" href="{{ url_for('student_calendar', year=next_year, month=next_month) }}">Next <i class="fa-solid fa-chevron-right"></i></a>
     </div>
 </div>
 

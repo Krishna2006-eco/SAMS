@@ -147,6 +147,90 @@ def init_db():
         )
     ''')
 
+    # Classrooms - a teacher-owned group that students join with a code
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS classrooms (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            teacher_id INTEGER NOT NULL,
+            join_code TEXT UNIQUE NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (teacher_id) REFERENCES users(id)
+        )
+    ''')
+
+    # Classroom membership - which students belong to which classroom
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS classroom_members (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            classroom_id INTEGER NOT NULL,
+            student_id INTEGER NOT NULL,
+            joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (classroom_id) REFERENCES classrooms(id),
+            FOREIGN KEY (student_id) REFERENCES users(id),
+            UNIQUE(classroom_id, student_id)
+        )
+    ''')
+
+    # Classroom posts - announcements/material posted by the teacher, optionally with a file
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS classroom_posts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            classroom_id INTEGER NOT NULL,
+            author_id INTEGER NOT NULL,
+            content TEXT NOT NULL,
+            file_name TEXT,
+            file_path TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (classroom_id) REFERENCES classrooms(id),
+            FOREIGN KEY (author_id) REFERENCES users(id)
+        )
+    ''')
+
+    # Comments on a classroom post - students (and the teacher) can reply, optionally with a file
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS classroom_comments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            post_id INTEGER NOT NULL,
+            author_id INTEGER NOT NULL,
+            content TEXT NOT NULL,
+            file_name TEXT,
+            file_path TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (post_id) REFERENCES classroom_posts(id),
+            FOREIGN KEY (author_id) REFERENCES users(id)
+        )
+    ''')
+
+    # Conversations - one row per unique pair of users having a 1-on-1 chat
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS conversations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_a INTEGER NOT NULL,
+            user_b INTEGER NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_a) REFERENCES users(id),
+            FOREIGN KEY (user_b) REFERENCES users(id),
+            UNIQUE(user_a, user_b)
+        )
+    ''')
+
+    # Direct messages - texts (and optional file attachments) within a conversation
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS direct_messages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            conversation_id INTEGER NOT NULL,
+            sender_id INTEGER NOT NULL,
+            content TEXT,
+            file_name TEXT,
+            file_path TEXT,
+            is_read INTEGER DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (conversation_id) REFERENCES conversations(id),
+            FOREIGN KEY (sender_id) REFERENCES users(id)
+        )
+    ''')
+
     # Insert default subjects if they don't exist
     default_subjects = ['Mathematics', 'Science', 'English', 'History', 'Geography']
     for subject in default_subjects:

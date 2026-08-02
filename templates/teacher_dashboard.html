@@ -9,14 +9,14 @@
 <div class="card">
     <h3>Quick Actions</h3>
     <div class="quick-actions">
-        <a href="{{ url_for('enter_marks') }}" class="btn btn-primary">Enter Marks</a>
-        <a href="{{ url_for('assign_task') }}" class="btn btn-secondary">Assign Task</a>
+        <a href="{{ url_for('enter_marks') }}" class="btn btn-primary"><i class="fa-solid fa-pen-to-square"></i> Enter Marks</a>
+        <a href="{{ url_for('assign_task') }}" class="btn btn-secondary"><i class="fa-solid fa-square-plus"></i> Assign Task</a>
     </div>
 </div>
 
 <!-- Student List -->
 <div class="card">
-    <h3>👨‍🎓 Students</h3>
+    <h3><i class="fa-solid fa-user-graduate"></i> Students</h3>
     {% if students %}
         <table class="data-table">
             <thead>
@@ -32,7 +32,7 @@
                     <td>{{ student.full_name }}</td>
                     <td>{{ student.username }}</td>
                     <td>
-                        <a href="{{ url_for('student_progress', student_id=student.id) }}" class="btn btn-small">View Progress</a>
+                        <a href="{{ url_for('student_progress', student_id=student.id) }}" class="btn btn-small"><i class="fa-solid fa-chart-line"></i> View Progress</a>
                     </td>
                 </tr>
                 {% endfor %}
@@ -45,7 +45,7 @@
 
 <!-- Class Average Trend -->
 <div class="card">
-    <h3>📈 Class Average Trend</h3>
+    <h3><i class="fa-solid fa-chart-line"></i> Class Average Trend</h3>
     {% if class_trend %}
         <canvas id="classAverageTrendChart" style="max-height: 380px;"></canvas>
     {% else %}
@@ -55,7 +55,7 @@
 
 <!-- Recent Student Activity -->
 <div class="card">
-    <h3>📖 Recent Student Study Activity</h3>
+    <h3><i class="fa-solid fa-book-open"></i> Recent Student Study Activity</h3>
     {% if recent_logs %}
         <table class="data-table">
             <thead>
@@ -74,7 +74,7 @@
                     <td>{{ log.last_activity }}</td>
                     <td>{{ log.subjects_covered }}</td>
                     <td>{{ log.total_hours }} hrs</td>
-                    <td><a href="{{ url_for('student_study_activity', student_id=log.student_id) }}" class="btn btn-small">View Activity</a></td>
+                    <td><a href="{{ url_for('student_study_activity', student_id=log.student_id) }}" class="btn btn-small"><i class="fa-solid fa-eye"></i> View Activity</a></td>
                 </tr>
                 {% endfor %}
             </tbody>

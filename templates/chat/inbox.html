@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+
+{% block title %}Messages - SAMS{% endblock %}
+
+{% block content %}
+<h1><i class="fa-solid fa-comments"></i> Messages</h1>
+
+<div class="card">
+    <div class="quick-actions">
+        {% if session.get('role') == 'teacher' %}
+            <a href="{{ url_for('chat.classroom_new') }}" class="btn btn-primary"><i class="fa-solid fa-chalkboard-user"></i> Create Classroom</a>
+        {% elif session.get('role') == 'student' %}
+            <a href="{{ url_for('chat.classroom_join') }}" class="btn btn-primary"><i class="fa-solid fa-door-open"></i> Join Classroom</a>
+        {% endif %}
+        <a href="{{ url_for('chat.dm_new') }}" class="btn btn-secondary"><i class="fa-solid fa-pen"></i> New Message</a>
+    </div>
+</div>
+
+<div class="card">
+    <h3><i class="fa-solid fa-chalkboard"></i> Classrooms</h3>
+    {% if classrooms %}
+        <table class="data-table">
+            <thead>
+                <tr><th>Name</th><th>Members</th>{% if session.get('role') == 'teacher' %}<th>Join Code</th>{% endif %}<th></th></tr>
+            </thead>
+            <tbody>
+                {% for c in classrooms %}
+                <tr>
+                    <td>{{ c.name }}</td>
+                    <td>{{ c.member_count }}</td>
+                    {% if session.get('role') == 'teacher' %}<td><code>{{ c.join_code }}</code></td>{% endif %}
+                    <td><a href="{{ url_for('chat.classroom_view', classroom_id=c.id) }}" class="btn btn-small"><i class="fa-solid fa-arrow-right"></i> Open</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p class="empty-state">
+            {% if session.get('role') == 'teacher' %}
+                You haven't created a classroom yet.
+            {% else %}
+                You haven't joined a classroom yet. Ask your teacher for a join code.
+            {% endif %}
+        </p>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h3><i class="fa-solid fa-user"></i> Direct Messages</h3>
+    {% if conversations %}
+        <table class="data-table">
+            <thead>
+                <tr><th>Contact</th><th>Last message</th><th></th></tr>
+            </thead>
+            <tbody>
+                {% for c in conversations %}
+                <tr>
+                    <td>
+                        {{ c.other_name }}
+                        {% if c.unread and c.unread > 0 %}<span class="bell-badge">{{ c.unread }}</span>{% endif %}
+                    </td>
+                    <td>
+                        {% if c.last_message %}{{ c.last_message[:60] }}{% elif c.last_file %}<i class="fa-solid fa-paperclip"></i> {{ c.last_file }}{% else %}<span class="text-muted">No messages yet</span>{% endif %}
+                    </td>
+                    <td><a href="{{ url_for('chat.dm_thread', other_id=c.other_id) }}" class="btn btn-small"><i class="fa-solid fa-arrow-right"></i> Open</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p class="empty-state">No conversations yet. Start one with "New Message".</p>
+    {% endif %}
+</div>
+{% endblock %}

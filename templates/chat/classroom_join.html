@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+
+{% block title %}Join Classroom - SAMS{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <h2><i class="fa-solid fa-door-open"></i> Join Classroom</h2>
+    <form method="POST" action="{{ url_for('chat.classroom_join') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="form-group">
+            <label for="join_code">Join Code</label>
+            <input type="text" id="join_code" name="join_code" placeholder="e.g., 7F3K9Q" maxlength="6" required style="text-transform:uppercase;">
+        </div>
+        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-right-to-bracket"></i> Join</button>
+        <a href="{{ url_for('chat.inbox') }}" class="btn btn-secondary"><i class="fa-solid fa-xmark"></i> Cancel</a>
+    </form>
+</div>
+{% endblock %}

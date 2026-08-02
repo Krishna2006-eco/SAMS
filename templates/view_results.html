@@ -5,7 +5,7 @@
 {% block content %}
 <div class="page-header-row">
     <h1>My Results</h1>
-    <a href="{{ url_for('student_report_card') }}" class="btn btn-primary">📄 Download Report Card (PDF)</a>
+    <a href="{{ url_for('student_report_card') }}" class="btn btn-primary"><i class="fa-solid fa-file-arrow-down"></i> Download Report Card (PDF)</a>
 </div>
 
 <!-- Overall Summary -->
@@ -35,7 +35,7 @@
 
 <!-- Detailed Results -->
 <div class="card">
-    <h3>📊 Detailed Results</h3>
+    <h3><i class="fa-solid fa-chart-column"></i> Detailed Results</h3>
     {% if selected_exam %}
         <p>Showing results for <strong>{{ selected_exam }}</strong>.</p>
         {% if exam_results %}
@@ -59,10 +59,10 @@
                     {% endfor %}
                 </tbody>
             </table>
-            <p><a href="{{ url_for('view_results') }}" class="btn btn-secondary">Back to exam list</a></p>
+            <p><a href="{{ url_for('view_results') }}" class="btn btn-secondary"><i class="fa-solid fa-arrow-left-long"></i> Back to exam list</a></p>
         {% else %}
             <p class="empty-state">No results found for this exam.</p>
-            <p><a href="{{ url_for('view_results') }}" class="btn btn-secondary">Back to exam list</a></p>
+            <p><a href="{{ url_for('view_results') }}" class="btn btn-secondary"><i class="fa-solid fa-arrow-left-long"></i> Back to exam list</a></p>
         {% endif %}
     {% elif exam_list %}
         <table class="data-table">
@@ -85,7 +85,7 @@
                     <td>{{ exam.percentage }}%</td>
                     <td class="grade-{{ exam.grade }}">{{ exam.grade }}</td>
                     <td>
-                        <a href="{{ url_for('view_results_exam', exam_name=exam.exam_name) }}" class="btn btn-small">View Exam</a>
+                        <a href="{{ url_for('view_results_exam', exam_name=exam.exam_name) }}" class="btn btn-small"><i class="fa-solid fa-eye"></i> View Exam</a>
                     </td>
                 </tr>
                 {% endfor %}
@@ -99,7 +99,7 @@
 <!-- Marks Trend Graph -->
 {% if not selected_exam and trend_labels and marks_trend %}
 <div class="card">
-    <h3>📈 Marks Trend</h3>
+    <h3><i class="fa-solid fa-chart-line"></i> Marks Trend</h3>
     <canvas id="marksTrendChart" width="600" height="300"></canvas>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>

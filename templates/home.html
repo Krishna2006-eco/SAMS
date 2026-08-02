@@ -9,15 +9,15 @@
     
     {% if not session.get('user_id') %}
         <div class="hero-buttons">
-            <a href="{{ url_for('register') }}" class="btn btn-primary">Get Started</a>
-            <a href="{{ url_for('login') }}" class="btn btn-secondary">Login</a>
+            <a href="{{ url_for('register') }}" class="btn btn-primary"><i class="fa-solid fa-arrow-right-long"></i> Get Started</a>
+            <a href="{{ url_for('login') }}" class="btn btn-secondary"><i class="fa-solid fa-right-to-bracket"></i> Login</a>
         </div>
     {% endif %}
 </div>
 
 <div class="features">
     <div class="feature-card">
-        <h3>📖 For Students</h3>
+        <h3><i class="fa-solid fa-book-open"></i> For Students</h3>
         <ul>
             <li>Log your daily study sessions</li>
             <li>Track hours spent per subject</li>
@@ -28,7 +28,7 @@
     </div>
     
     <div class="feature-card">
-        <h3>👨‍🏫 For Teachers</h3>
+        <h3><i class="fa-solid fa-chalkboard-user"></i> For Teachers</h3>
         <ul>
             <li>Enter marks for students</li>
             <li>View student study patterns</li>

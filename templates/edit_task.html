@@ -27,8 +27,8 @@
             <input type="date" id="due_date" name="due_date" value="{{ task.due_date or '' }}">
         </div>
 
-        <button type="submit" class="btn btn-primary">Update Task</button>
-        <a href="{{ url_for('student_progress', student_id=task.student_id) }}" class="btn btn-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Update Task</button>
+        <a href="{{ url_for('student_progress', student_id=task.student_id) }}" class="btn btn-secondary"><i class="fa-solid fa-xmark"></i> Cancel</a>
     </form>
 </div>
 {% endblock %}
